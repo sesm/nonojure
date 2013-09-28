@@ -2,11 +2,28 @@
 <html>
 <head>
 <title>Hello world</title>
-<script type="text/javascript" src="/static/js/main.js" ></script>
 </head>
 <body>
-<img id="rainbowdash" src="/static/img/rainbowdash.png"
-     style="width: 20%; height: 20%;">
-<div id="somediv"></div>
+<div id="puzzle-view"></div>
 </body>
+<style type="text/css">
+    table.puzzle-table-non {
+        border-collapse:collapse;
+    }
+    table.puzzle-table-non td, table.puzzle-table-non th {
+        border:1px solid black;
+        padding:5px;
+    }
+    td.cell-clicked {
+        border:1px solid white;
+        background-color: black;
+    }
+    td.cell-not-clicked {
+        border:1px solid black;
+        background-color: white;
+    }
+</style>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script type="text/javascript" src="/static/js/main.js" ></script>
+<script>nonojure.puzzleview.init()</script>
 </html>
