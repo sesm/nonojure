@@ -20,7 +20,7 @@
      :solution (map #(apply str %) rows)}))
 
 
-(defn test [n m]
+(defn test-random [n m]
   (let [puzzle (generate-puzzle n m)]
    (println (format "\nPuzzle %dx%d" n m))
    (doseq [row (:solution puzzle)] (println row))
