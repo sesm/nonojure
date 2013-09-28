@@ -1,4 +1,4 @@
-(ns clony.http-server
+(ns nonojure.http-server
   (:use compojure.core)
   (:require
    [compojure.handler :as chandler]
@@ -8,7 +8,7 @@
    [cheshire.core :as json]
    [taoensso.timbre :as timbre
     :refer (trace debug info warn error fatal spy with-log-level)]
-   [clony.lifecycle :as lifecycle]))
+   [nonojure.lifecycle :as lifecycle]))
 
 (def quotes
   ["Hey. I could clear this sky in ten seconds flat"

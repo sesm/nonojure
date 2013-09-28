@@ -1,6 +1,6 @@
-(ns clony.core
-  (:require [clony.lifecycle :as lifecycle])
-  (:require [clony.http-server :as http-server]))
+(ns nonojure.core
+  (:require [nonojure.lifecycle :as lifecycle])
+  (:require [nonojure.http-server :as http-server]))
 
 (def default-config
   {:http {:port 8081}})

@@ -1,4 +1,4 @@
-(ns clony.lifecycle
+(ns nonojure.lifecycle
   (:require [taoensso.timbre :as timbre
              :refer (trace debug info warn error fatal spy with-log-level)]))
 

@@ -1,5 +1,5 @@
-(defproject clony "0.1.0-SNAPSHOT"
-  :description "modern Clojure webapp example"
+(defproject nonojure "0.0.1-SNAPSHOT"
+  :description "Nonogram puzzles"
   :source-paths ["src/clj"]
   :plugins [[lein-cljsbuild "0.3.3"]
             [lein-midje "3.0.0"]]
@@ -13,8 +13,8 @@
                  [compojure "1.1.5"]
 
                  [prismatic/dommy "0.1.1"]]
-  :main clony.runner
-  :aot [clony.runner]
+  :main nonojure.runner
+  :aot [nonojure.runner]
   :cljsbuild {:builds
               [{:source-paths ["src/cljs"],
                 :compiler {:output-dir "resources/public/js/",

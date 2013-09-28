@@ -1,5 +1,5 @@
-(ns clony.runner
-  (:require [clony.core :as core])
+(ns nonojure.runner
+  (:require [nonojure.core :as core])
   (:gen-class))
 
 (defn -main

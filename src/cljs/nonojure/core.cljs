@@ -1,4 +1,4 @@
-(ns clony.core
+(ns nonojure.core
   (:require
    [dommy.utils :as utils]
    [dommy.core :as dommy])

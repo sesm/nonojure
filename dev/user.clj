@@ -4,8 +4,8 @@
    [cemerick.pomegranate :as pomegranate]
    [clojure.tools.namespace.repl :as ctnrepl]
    [criterium.core :as cr]
-   [clony.core :as core]
-   [clony.lifecycle :as lifecycle]))
+   [nonojure.core :as core]
+   [nonojure.lifecycle :as lifecycle]))
 
 (def dev-config
   {:http {:port 8081}})
