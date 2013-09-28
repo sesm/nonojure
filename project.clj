@@ -25,4 +25,5 @@
                                   [com.cemerick/pomegranate "0.2.0"]
                                   [criterium "0.4.2"]]
                    :source-paths ["dev"]
-                   :main user}})
+;                   :main user
+                   }})
