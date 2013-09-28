@@ -11,7 +11,7 @@
                  [cheshire "5.2.0"]
                  [http-kit "2.1.10"]
                  [compojure "1.1.5"]
-
+                 
                  [prismatic/dommy "0.1.1"]]
   :main nonojure.runner
   :aot [nonojure.runner]
