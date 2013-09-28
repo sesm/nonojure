@@ -20,10 +20,4 @@
                 :compiler {:output-dir "resources/public/js/",
                            :output-to "resources/public/js/main.js",
                            :pretty-print true,
-                           :optimizations :whitespace}}]}
-  :profiles {:dev {:dependencies [[org.clojure/tools.namespace "0.2.4"]
-                                  [com.cemerick/pomegranate "0.2.0"]
-                                  [criterium "0.4.2"]]
-                   :source-paths ["dev"]
-;                   :main user
-                   }})
+                           :optimizations :whitespace}}]})

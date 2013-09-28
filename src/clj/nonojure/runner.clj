@@ -4,4 +4,4 @@
 
 (defn -main
   [& args]
-  (core/run-system))
+  (core/start))

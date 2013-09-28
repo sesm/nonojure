@@ -1,25 +1,38 @@
 (ns nonojure.core
-  (:require [nonojure.lifecycle :as lifecycle])
-  (:require [nonojure.http-server :as http-server]))
+  (:require
+   [compojure.core :refer :all]
+   [compojure.handler :as chandler]
+   [compojure.route :as croute]
+   [org.httpkit.server :as httpkit]
+   [ring.util.response :refer [file-response]]
+   [cheshire.core :as json]
+   [taoensso.timbre :as timbre
+    :refer (trace debug info warn error fatal spy with-log-level)]))
 
-(def default-config
-  {:http {:port 8081}})
+(def config
+  {:http {:port 3000}})
 
-(defrecord RootNode [config]
-  lifecycle/Node
-  (start [s]
-    s)
-  (stop [s]
-    s))
+(defroutes app-routes
+  (GET "/" [] (file-response "resources/landing.html"))
+  (croute/resources "/static")
+  (croute/not-found "Nothing to see here, move along"))
 
-(defn prepare-root [config]
-  {:node (->RootNode config)
-   :children [#(http-server/prepare (:http config))]})
+(defn wrap-logging [handler]
+  (fn [req]
+    (let [resp (handler req)]
+      (debug (str "reg: " (:uri req) " " (:status resp)))
+      resp)))
 
-(defn prepare-system [config]
-  (let [root-node (prepare-root config)]
-    (lifecycle/prepare-node root-node)))
+(def app
+  (-> (chandler/site #'app-routes)
+      (wrap-logging)))
 
-(defn run-system []
-  (let [sys (prepare-system default-config)]
-    (lifecycle/start-node! sys)))
+(defn start []
+  (let [stop (httpkit/run-server app (:http config))]
+    (info (str "Started server on port " (get-in config [:http :port])))
+    stop))
+
+#_(
+   (def server (start))
+
+   (server))
