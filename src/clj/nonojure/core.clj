@@ -3,6 +3,8 @@
    [compojure.core :refer :all]
    [compojure.handler :as chandler]
    [compojure.route :as croute]
+   [ring.middleware.json :refer [wrap-json-response]]
+   [ring.util.response :refer [response]]
    [org.httpkit.server :as httpkit]
    [ring.util.response :refer [file-response]]
    [cheshire.core :as json]
@@ -12,10 +14,25 @@
 
 (def config {:port 3000})
 
+(defn- parse-filter-value [value]
+  (if value
+    (->> (clojure.string/split value #"-")
+         (map #(Integer/parseInt %)))
+    nil))
+
+(defroutes api
+  (GET "/nonograms" [filter value sort order]
+       (response (db/read-nonograms {:filter-field (keyword filter)
+                                     :filter-value (parse-filter-value value)
+                                     :sort-field (keyword sort)
+                                     :sort-order (keyword order)}))))
+
 (defroutes app-routes
   (GET "/" [] (file-response "resources/landing.html"))
+  (context "/api" [] (-> api
+                         (wrap-json-response {:pretty true})))
   (croute/resources "/static")
-  (croute/not-found "Nothing to see here, move along"))
+  (croute/not-found "Nothing to see here, move along."))
 
 (defn wrap-logging [handler]
   (fn [req]

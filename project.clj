@@ -8,8 +8,8 @@
 
                  [midje "1.6-beta1"]
                  [com.taoensso/timbre "2.6.1"]
-                 [cheshire "5.2.0"]
                  [http-kit "2.1.10"]
+                 [ring/ring-json "0.2.0"]
                  [compojure "1.1.5"]
                  [com.novemberain/monger "1.5.0"]
 

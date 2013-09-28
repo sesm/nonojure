@@ -17,25 +17,25 @@
   (let [id (ObjectId.)
         nonogram (assoc nonogram
                    :_id id
-                   :width (count (:top nonogram))
-                   :height (count (:left nonogram)))]
+                   :size (max (count (:top nonogram))
+                              (count (:left nonogram)))
+                   :rating 0)]
     (mc/insert-and-return nono-coll nonogram)))
 
 (defn- find-clause [field [min max]]
-  (case field
-    :rating {:rating {$gte min $lte max}}
-    :size {$or [{:width {$gte min}}
-                {:height {$gte min}}]
-           :width {$lte max}
-           :height {$lte max}}
+  (if field
+    {field {$gte min $lte max}}
     {}))
 
 (defn- sort-clause [field order]
-  {field (if (= order :asc) 1 -1)})
+  (if field
+    (array-map field (if (= order :asc) 1 -1)
+               :_id 1)
+    {:_id 1}))
 
 (defn- prepare-nono-for-client [nono]
   (-> nono
-      (dissoc :_id)
+      (dissoc :_id :size)
       (assoc :id (str (:_id nono)))))
 
 (defn read-nonograms [{:keys [filter-field
@@ -52,4 +52,11 @@
           height (range 5 31 5)]
     (insert-nonogram (generate-puzzle height width))))
 
+#_(
+
+   (mc/remove nono-coll)
+
+   (fill-db-with-random-puzzles)
+
+   )
 
