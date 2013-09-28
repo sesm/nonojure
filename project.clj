@@ -5,11 +5,13 @@
             [lein-midje "3.0.0"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-1909"]
+
                  [midje "1.6-beta1"]
                  [com.taoensso/timbre "2.6.1"]
                  [cheshire "5.2.0"]
                  [http-kit "2.1.10"]
                  [compojure "1.1.5"]
+                 [com.novemberain/monger "1.5.0"]
 
                  [prismatic/dommy "0.1.1"]]
   :main nonojure.runner

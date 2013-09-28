@@ -10,8 +10,8 @@
        (remove #(= " " (first %)))
        (map count)))
 
-(defn generate-puzzle [n m]
-  (let [rows (repeatedly n #(random-row m))
+(defn generate-puzzle [height width]
+  (let [rows (repeatedly height #(random-row width))
         left (map row-to-numbers rows)
         top (->> (apply map vector rows)
                  (map row-to-numbers))]

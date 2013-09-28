@@ -6,11 +6,11 @@
    [org.httpkit.server :as httpkit]
    [ring.util.response :refer [file-response]]
    [cheshire.core :as json]
+   [nonojure.db :as db]
    [taoensso.timbre :as timbre
     :refer (trace debug info warn error fatal spy with-log-level)]))
 
-(def config
-  {:http {:port 3000}})
+(def config {:port 3000})
 
 (defroutes app-routes
   (GET "/" [] (file-response "resources/landing.html"))
@@ -28,8 +28,9 @@
       (wrap-logging)))
 
 (defn start []
-  (let [stop (httpkit/run-server app (:http config))]
-    (info (str "Started server on port " (get-in config [:http :port])))
+  (db/connect)
+  (let [stop (httpkit/run-server app config)]
+    (info (str "Started server on port " (:port config)))
     stop))
 
 
