@@ -30,3 +30,12 @@ td.cell-clicked {
     border:
         1px solid black;
 }
+
+td.cell-rightclicked {
+    background:
+        url("/static/img/cross.png")
+        no-repeat
+        50% 50%;
+    border:
+        1px solid black;
+}

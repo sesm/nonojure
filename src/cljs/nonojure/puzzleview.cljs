@@ -17,8 +17,8 @@
 ;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
-(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
-           :top [[1 1] [1 3] [2] [1 2] [2]]})
+;(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
+;           :top [[1 1] [1 3] [2] [1 2] [2]]})
 
 (defn pad-nils [nums length]
   "Given a sequence of nils and desired length, adds nils to the beginning
@@ -34,7 +34,7 @@
   row number and row length. Returns template for nodes construction"
   (let [ all-nums (pad-nils nums offset)
          num-tds (map #(if % [:td#.num %] [:td]) all-nums)
-         cells (for [c (range row-length)] [(keyword (str "td#.cell.c" c ".r" row-num))])]
+         cells (for [c (range row-length)] [(keyword (str "td#.cell.c" c ".r" row-num ".cell-not-clicked"))])]
     (-> [:tr]
       (into num-tds)
       (into cells))))
@@ -67,19 +67,32 @@
       (into header)
       (into rows))))
 
-(defn cell-click-handler [evt node]
+(defn cell-click [evt node]
   "Change the color when cell is clicked"
-  (if (dommy/has-class? node "cell-clicked")
-      (do
-        (dommy/remove-class! node "cell-clicked")
-        (dommy/add-class! node "cell-not-clicked"))
-      (do
-        (dommy/remove-class! node "cell-not-clicked")
-        (dommy/add-class! node "cell-clicked"))))
+  (let [button (.-which evt)
+        not-cl (dommy/has-class? node "cell-not-clicked")
+        cl     (dommy/has-class? node "cell-clicked")
+        r-cl   (dommy/has-class? node "cell-rightclicked")]
+    (cond
+      (and not-cl (= 1 button)) (do (dommy/remove-class! node "cell-not-clicked")
+                                    (dommy/add-class! node "cell-clicked"))
+      (and not-cl (= 3 button)) (do (dommy/remove-class! node "cell-not-clicked")
+                                    (dommy/add-class! node "cell-rightclicked"))
+      (and cl     (= 1 button)) (do (dommy/remove-class! node "cell-clicked")
+                                    (dommy/add-class! node "cell-not-clicked"))
+      (and cl     (= 3 button)) (do (dommy/remove-class! node "cell-clicked")
+                                    (dommy/add-class! node "cell-rightclicked"))
+      (and r-cl   (= 1 button)) (do (dommy/remove-class! node "cell-rightclicked")
+                                    (dommy/add-class! node "cell-clicked"))
+      (and r-cl   (= 3 button)) (do (dommy/remove-class! node "cell-rightclicked")
+                                    (dommy/add-class! node "cell-not-clicked"))
+      :else false)))
 
 (defn add-handlers []
   (let [cells (sel ".cell")]
-      (doseq [cell cells] (set! (.-onmousedown cell) #(cell-click-handler % cell)))))
+      (doseq [cell cells]
+        (set! (.-onmousedown cell) #(cell-click % cell))
+        (set! (.-oncontextmenu cell) (fn [evt] false)))))
 
 (defn show [nono]
   (do
