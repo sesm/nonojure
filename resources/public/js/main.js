@@ -499,6 +499,19 @@ goog.base = function(me, opt_methodName, var_args) {
 goog.scope = function(fn) {
   fn.call(goog.global)
 };
+goog.provide("goog.debug.Error");
+goog.debug.Error = function(opt_msg) {
+  if(Error.captureStackTrace) {
+    Error.captureStackTrace(this, goog.debug.Error)
+  }else {
+    this.stack = (new Error).stack || ""
+  }
+  if(opt_msg) {
+    this.message = String(opt_msg)
+  }
+};
+goog.inherits(goog.debug.Error, Error);
+goog.debug.Error.prototype.name = "CustomError";
 goog.provide("goog.string");
 goog.provide("goog.string.Unicode");
 goog.string.Unicode = {NBSP:"\u00a0"};
@@ -939,19 +952,6 @@ goog.string.parseInt = function(value) {
   }
   return NaN
 };
-goog.provide("goog.debug.Error");
-goog.debug.Error = function(opt_msg) {
-  if(Error.captureStackTrace) {
-    Error.captureStackTrace(this, goog.debug.Error)
-  }else {
-    this.stack = (new Error).stack || ""
-  }
-  if(opt_msg) {
-    this.message = String(opt_msg)
-  }
-};
-goog.inherits(goog.debug.Error, Error);
-goog.debug.Error.prototype.name = "CustomError";
 goog.provide("goog.asserts");
 goog.provide("goog.asserts.AssertionError");
 goog.require("goog.debug.Error");
@@ -25169,24 +25169,16 @@ dommy.core.fire_BANG_ = function() {
   fire_BANG_.cljs$core$IFn$_invoke$arity$variadic = fire_BANG___delegate;
   return fire_BANG_
 }();
-goog.provide("clony.core");
+goog.provide("nonojure.core");
 goog.require("cljs.core");
 goog.require("dommy.core");
 goog.require("dommy.utils");
-clony.core.ws_url = "ws://localhost:8081/ws";
-clony.core.ws = new WebSocket(clony.core.ws_url);
-clony.core.click_handler = function click_handler(evt) {
-  return clony.core.ws.send(JSON.stringify(cljs.core.clj__GT_js.call(null, cljs.core.PersistentArrayMap.fromArray([new cljs.core.Keyword(null, "msg", "msg", 1014012659), "gimme a quote!"], true))))
+nonojure.core.quotes = cljs.core.PersistentVector.fromArray(["Hey. I could clear this sky in ten seconds flat", "Nopony knows! You know why? Because everypony who's ever come in...has never...come...OUT!", "See? I'd never leave my friends hanging!", "Time to take out the adorable trash", "It needs to be about 20% cooler", "I'm... hanging... with the... Wonderbolts!", "Danger's my middle name. Rainbow 'Danger' Dash."], true);
+nonojure.core.click_handler = function click_handler(evt) {
+  var msg = cljs.core.rand_nth.call(null, nonojure.core.quotes);
+  return dommy.core.prepend_BANG_.call(null, document.getElementById("somediv"), cljs.core.PersistentVector.fromArray([new cljs.core.Keyword(null, "div", "div", 1014003715), msg], true))
 };
-clony.core.msg_handler = function msg_handler(raw_msg) {
-  var msg = JSON.parse(raw_msg);
-  var msg__$1 = cljs.core.js__GT_clj.call(null, msg, new cljs.core.Keyword(null, "keywordize-keys", "keywordize-keys", 4191781672), true);
-  return dommy.core.prepend_BANG_.call(null, document.getElementById("somediv"), cljs.core.PersistentVector.fromArray([new cljs.core.Keyword(null, "div", "div", 1014003715), (new cljs.core.Keyword(null, "msg", "msg", 1014012659)).call(null, msg__$1)], true))
+nonojure.core.init = function init() {
+  return dommy.core.listen_BANG_.call(null, document.getElementById("rainbowdash"), new cljs.core.Keyword(null, "click", "click", 1108654330), nonojure.core.click_handler)
 };
-clony.core.init = function init() {
-  dommy.core.listen_BANG_.call(null, document.getElementById("rainbowdash"), new cljs.core.Keyword(null, "click", "click", 1108654330), clony.core.click_handler);
-  return clony.core.ws.onmessage = function(msg) {
-    return clony.core.msg_handler.call(null, msg.data)
-  }
-};
-clony.core.on_load = window.onload = clony.core.init;
+nonojure.core.on_load = window.onload = nonojure.core.init;
