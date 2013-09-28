@@ -22,14 +22,25 @@
 
 (defroutes api
   (GET "/nonograms" [filter value sort order]
-       (response (db/read-nonograms {:filter-field (keyword filter)
+       (response (db/find-nonograms {:filter-field (keyword filter)
                                      :filter-value (parse-filter-value value)
                                      :sort-field (keyword sort)
-                                     :sort-order (keyword order)}))))
+                                     :sort-order (keyword order)})))
+  (GET "/nonograms/:id" [id]
+       (response (db/find-nonogram-by-id id)))
+  (POST "/rate/:id" [id rating]
+        (response (db/update-rating id (Integer/parseInt rating)))))
+
+(defn wrap-error [handler]
+  (fn [req]
+    (try (handler req)
+         (catch Exception e
+           {:status 500}))))
 
 (defroutes app-routes
   (GET "/" [] (file-response "resources/landing.html"))
   (context "/api" [] (-> api
+                         (wrap-error)
                          (wrap-json-response {:pretty true})))
   (croute/resources "/static")
   (croute/not-found "Nothing to see here, move along."))
