@@ -54,11 +54,11 @@
        (map prepare-nono-for-client)))
 
 (defn find-nonogram-by-id [id]
-  (when-let [nono (mc/find-one-as-map nono-coll {:_id (ObjectId.id)})]
+  (when-let [nono (mc/find-one-as-map nono-coll {:_id (ObjectId. id)})]
     (prepare-nono-for-client nono)))
 
 (defn update-rating [id rating]
-  (when-let [nono (mc/find-one-as-map nono-coll {:_id (ObjectId.id)})]
+  (when-let [nono (mc/find-one-as-map nono-coll {:_id (ObjectId. id)})]
     (when (<= 1 rating 5)
       (let [times (:times-rated nono)
             new-rating (-> (:rating nono)
