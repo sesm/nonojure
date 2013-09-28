@@ -1,8 +1,0 @@
-table.puzzle-table-non {
-    border-collapse:collapse;
-}
-
-table.puzzle-table-non td, table.puzzle-table-non th {
-    border:1px solid black;
-    padding:5px;
-}

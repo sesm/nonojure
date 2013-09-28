@@ -17,8 +17,8 @@
 ;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
-;(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
-;           :top [[1 1] [1 3] [2] [1 2] [2]]})
+(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
+           :top [[1 1] [1 3] [2] [1 2] [2]]})
 
 (defn pad-nils [nums length]
   "Given a sequence of nils and desired length, adds nils to the beginning
@@ -63,11 +63,12 @@
                             offset
                             r
                             width))]
-    (-> [:table#table.puzzle-table-non {:width 100 :height 100 :id "puzzle-table"}]
+    (-> [:table#table.puzzle-table-non {:id "puzzle-table"}]
       (into header)
       (into rows))))
 
 (defn cell-click-handler [evt node]
+  "Change the color when cell is clicked"
   (if (dommy/has-class? node "cell-clicked")
       (do
         (dommy/remove-class! node "cell-clicked")
@@ -76,9 +77,17 @@
         (dommy/remove-class! node "cell-not-clicked")
         (dommy/add-class! node "cell-clicked"))))
 
+(defn add-handlers []
+  (let [cells (sel ".cell")]
+      (doseq [cell cells] (set! (.-onmousedown cell) #(cell-click-handler % cell)))))
+
+(defn show [nono]
+  (do
+    (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
+    (add-handlers)))
+
 (defn ^:export init []
   (when (and js/document
              (aget js/document "getElementById"))
     (dommy/prepend! (sel1 :#puzzle-view) (create-template (nonojure.random/generate-puzzle 10 10)))
-    (let [cells (sel ".cell")]
-      (doseq [cell cells] (set! (.-onmousedown cell) #(cell-click-handler % cell))))))
+    (add-handlers)))

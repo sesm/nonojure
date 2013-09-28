@@ -1,0 +1,32 @@
+table.puzzle-table-non {
+    border-collapse:collapse;
+}
+table.puzzle-table-non td, table.puzzle-table-non th {
+    border:1px solid black;
+    padding:5px;
+}
+table td {
+    width: 14px;
+    height: 14px;
+    overflow: hidden;
+    display: inline-block;
+    white-space: nowrap;
+}
+td.cell-not-clicked {
+    background:
+        fixed #ffffff
+        url("/static/img/clicked.gif")
+        no-repeat
+        50% 50%;
+    border:
+        1px solid white;
+}
+td.cell-clicked {
+    background:
+        fixed #000000
+        url("/static/img/nonclicked.gif")
+        no-repeat
+        50% 50%;
+    border:
+        1px solid black;
+}
