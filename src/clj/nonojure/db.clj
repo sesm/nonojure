@@ -5,14 +5,16 @@
              [query :as mq]
              [operators :refer [$gte $lte $or]]]
             [nonojure.random :refer [generate-puzzle]]
-            [taoensso.timbre :refer (warn)])
+            [taoensso.timbre :refer [error warn]])
   (:import [org.bson.types ObjectId]))
 
 (def nono-coll "nonograms")
 
 (defn connect []
-  (mg/connect!)
-  (mg/set-db! (mg/get-db "nonojure")))
+  (try (mg/connect!)
+       (mg/set-db! (mg/get-db "nonojure"))
+       (catch Exception e
+         (error (str "Couldn't connect to mongo " e)))))
 
 (defn insert-nonogram [nonogram]
   (let [id (ObjectId.)

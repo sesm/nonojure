@@ -20,6 +20,11 @@ input {
     width: 480px;
 }
 
+.title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
 button {
     float: right;
 }
