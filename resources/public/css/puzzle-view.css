@@ -69,17 +69,9 @@ table td {
     white-space: nowrap;
 }
 
-.nothing {
-}
-
 #puzzle-view {
     margin-right: auto;
     margin-left: auto;
-}
-
-.num {
-}
-.cell-not-clicked {
 }
 
 .cell-clicked {
