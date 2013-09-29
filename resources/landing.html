@@ -1,34 +1,39 @@
 <!DOCTYPE HTML>
 <html>
-<head>
-<title>Hello world</title>
-<link rel="stylesheet" type="text/css" href="/static/css/puzzle-view.css" />
-<link rel="stylesheet" type="text/css" href="/static/css/browser-view.css">
+  <head>
+    <title>Hello world</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/puzzle-view.css" />
+    <link rel="stylesheet" type="text/css" href="/static/css/browser-view.css">
 
-</head>
-<body>
-<div class="head-div"><h1 class="header">Nonoj</h1><h1 class="simple-header simple-header-position ">ure</h1><h6 class="minitext">clojurecup</h6></div>
-<div id="all-container" >
-    <div class="puzzle-container " >
+  </head>
+  <body>
+    <div class="head-div">
+      <h1 class="header">Nonoj</h1>
+      <h1 class="simple-header simple-header-position ">ure</h1>
+      <h6 class="minitext">clojurecup</h6>
+    </div>
+    <div id="all-container" >
+      <div class="puzzle-container " >
         <div class="puzzle center ">
-            <div id="puzzle-view" ></div>
-            <div class="button-container">
-                <form >
-                    <input type="button" id= "button-done" value="Done!">
-                    <input type="button" value="I give up" onclick="alert('Not implemented')">
-                    <input type="button" value="Show me"onclick="alert('Not implemented')">
-                </form>
-            </div>
+          <p class="random-puzzles">All puzzles are random now</p>
+          <div id="puzzle-view" ></div>
+          <div class="button-container">
+            <form >
+              <input type="button" id= "button-done" value="Done!">
+              <input type="button" value="I give up" onclick="alert('Not implemented')">
+              <input type="button" value="Show me"onclick="alert('Not implemented')">
+            </form>
+          </div>
         </div>
 
-    </div>
-    <div class="browser-container">
+      </div>
+      <div class="browser-container">
         <div id="browser"></div>
+      </div>
     </div>
-</div>
-</body>
-<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-<script type="text/javascript" src="/static/js/main.js" ></script>
-<script>nonojure.puzzleview.init()</script>
-<script>nonojure.puzzlebrowser.init()</script>
+  </body>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+  <script type="text/javascript" src="/static/js/main.js" ></script>
+  <script>nonojure.puzzleview.init()</script>
+  <script>nonojure.puzzlebrowser.init()</script>
 </html>
