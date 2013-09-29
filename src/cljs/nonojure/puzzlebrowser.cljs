@@ -108,17 +108,15 @@
 (deftemplate filtering []
   [:div.filtering
    [:div.size [:p.type "Size"]
-    [:a.all.selected {:href "#"} "all"]
+    [:a.all.selected "all"]
     (for [value ["1-10" "11-20" "21-30"]]
-      [:a {:href "#"
-           :data-filter "size"
+      [:a {:data-filter "size"
            :data-value value}
        value])]
    [:div.rating [:p.type "Rating"]
-    [:a.all {:href "#"} "all"]
+    [:a.all "all"]
     (for [rating [1 2 3 4 5]]
-      [:a {:href "#"
-           :data-filter "rating"
+      [:a {:data-filter "rating"
            :data-value (str (- rating 0.5) "-" (+ rating 0.499))}
        rating])]])
 
