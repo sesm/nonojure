@@ -9,33 +9,41 @@
 (def num-cols 5)
 
 (defn ^:export showalert []
-  (let [min-size (.-value (sel1 :#minSize))
-        max-size (.-value (sel1 :#maxSize))
-        order "asc"]
-    (js/alert (str min-size " - " max-size " - " order))))
-
-(defn create-template [width height]
-  (repeat height (cons :p (repeat width "."))))
+  (let [min-size (js/parseInt (.-value (sel1 :#minSize)))
+        max-size (js/parseInt (.-value (sel1 :#maxSize)))
+        order (->> (sel ".order")
+                   (filter #(.-checked %))
+                   first
+                   .-value)]
+    (dommy/remove! (sel1 :table))
+    (retrieve-thumbnails {:min-size min-size :max-size max-size :order order})))
 
 (deftemplate nono-thumbnail [nono]
-  (let [width (get nono "width")
+  (let [scale 20
+        width (get nono "width")
         height (get nono "height")
         rating (get nono "rating")
         puzzle-id (get nono "id")]
-    [:a {:href (str "/api/nonograms/" puzzle-id)}
-     [:p (str width "x" height " - " rating)]
-     #_(create-template width height)]))
+    [:div {:align "center"}
+     [:a {:href (str "/api/nonograms/" puzzle-id)}
+      [:img {:src "/static/img/grid.svg"
+             :width (* scale width)
+             :height (* scale height)}]
+      [:p (str width "x" height " - " rating)]]]))
 
 (defn create-thumbnails [nonos]
-  (let [cells (for [nono nonos]
-                [:td (nono-thumbnail (js->clj nono))])
+  (let [cells (for [nono nonos] [:td (nono-thumbnail (js->clj nono))])
         padded-cells (concat cells (repeat (dec num-cols) [:td ""]))
         rows (partition num-cols padded-cells)
         contents (for [row rows] [:tr row])
         table [:table#table.puzzle-browser{:id "puzzle-browser" :border 1} contents]]
     (dommy/append! (sel1 :body) table)))
 
-(defn ^:export init []
-  (let [url "/api/nonograms?filter=size&value=1-100&sort=rating&order=asc"]
+(defn retrieve-thumbnails [{:keys [min-size max-size order]
+                            :or {min-size 1 max-size 100 order :asc}}]
+  (let [url (str "/api/nonograms?filter=size&value=" min-size "-" max-size "&sort=rating&order=" order)]
     (ajax url {:success create-thumbnails
                :error #(js/alert "Error")})))
+
+(defn ^:export init []
+  (retrieve-thumbnails {:min-size 1 :max-size 100 :order :asc}))
