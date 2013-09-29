@@ -219,9 +219,9 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
     (dommy/remove-class! el class)))
 
 (defn show [nono]
-  (do
-    (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
-    (add-handlers)))
+  (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
+  (add-handlers)
+  (dommy/remove-class! (sel1 :.puzzle-container) "hidden"))
 
 (defn ^:export init []
   (when (and js/document

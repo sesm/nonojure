@@ -74,6 +74,10 @@ table td {
     margin-left: auto;
 }
 
+.hidden {
+    display: none;
+}
+
 .cell-clicked {
     background:
         url("/static/img/clicked.gif")
@@ -141,28 +145,13 @@ input[type=button], input[type=text]
 
 
 .minitext {
-    position: absolute;
+    position: relative;
     top: 47px;
     left: 200px;
     font-size: 12px;
 }
 
 .header {
-    text-transform: uppercase;
-    text-shadow: -1px 2px 2px black;
-    font-size: 2.7em;
-    line-height: 1.2em;
-    font-weight: bold;
-    text-decoration: underline;
-}
-
-.simple-header-position {
-    position: absolute;
-    top: 2px;
-    left: 180px;
-}
-
-.simple-header {
     text-transform: uppercase;
     text-shadow: -1px 2px 2px black;
     font-size: 2.7em;
@@ -175,7 +164,11 @@ input[type=button], input[type=text]
 }
 
 .head-div {
-    border: 2px dashed black;
+    position: relative;
+    width: 200px;
+    margin-left: auto;
+    margin-right: auto;
+    
 }
 
 .thick-top {

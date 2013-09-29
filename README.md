@@ -7,3 +7,4 @@ Website: [http://nonojure.clojurecup.com](http://nonojure.clojurecup.com)
 
 Examples of API: [http://nonojure.clojurecup.com/api-examples](http://nonojure.clojurecup.com/api-examples)
 
+Server uses MongoDB with default settings without authentication. 
