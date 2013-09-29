@@ -146,9 +146,9 @@ input[type=button], input[type=text]
 
 .minitext {
     position: relative;
-    top: 47px;
-    left: 200px;
-    font-size: 12px;
+    top: -40px;
+    left: 180px;
+    font-size: 14px;
 }
 
 .header {
