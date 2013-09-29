@@ -13,7 +13,8 @@
 
 (def root (atom nil))
 
-(def difficulties {1 "easy"
+(def difficulties {0 "not rated"
+                   1 "easy"
                    2 "medium"
                    3 "hard"})
 
@@ -57,7 +58,7 @@
   (let [scale 20
         width (get nono "width")
         height (get nono "height")
-        difficulty (get nono "difficulty")
+        difficulty (Math/round (get nono "difficulty"))
         puzzle-id (get nono "id")]
     [:div.thumbnail
      {:data-id puzzle-id}
@@ -72,10 +73,7 @@
 
      [:div.description
       [:p.size (str width "×" height)]
-      [:p.difficulty (if (zero? difficulty)
-                   "not rated"
-                   (str  (difficulties difficulty)
-                         " (" (nono "times-rated") ")"))]]]))
+      [:p.difficulty (difficulties difficulty)]]]))
 
 (defn create-thumbnails [nonos]
   (when-let [old (sel1 @root :#thumbnails)]
@@ -120,10 +118,10 @@
        value])]
    [:div.difficulty [:p.type "Difficulty"]
     [:a.all "all"]
-    (for [[value caption] [[1 "easy"] [2 "medium"] [3 "hard"]]]
+    (for [value [1 2 3]]
       [:a {:data-filter "difficulty"
            :data-value (str (- value 0.5) "-" (+ value 0.499))}
-       caption])]])
+       (difficulties value)])]])
 
 (defn add-filtering-listener [filter-div]
   (dommy/listen! [filter-div :a] :click
