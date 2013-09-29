@@ -18,6 +18,11 @@
     text-align: center;
 }
 
+.center-container {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .puzzle-container {
     border-radius: 15px;
     border: 4px solid black;
@@ -29,6 +34,8 @@
     width: 49%;
     background: white;
     float:left;
+    min-height: 600px;
+    min-width: 500px;
 }
 
 .some-container {
@@ -109,6 +116,7 @@ body {
     background: -ms-linear-gradient(top,  #f0f9ff 0%,#cbebff 47%,#a1dbff 100%); /* IE10+ */
     background: linear-gradient(to bottom,  #f0f9ff 0%,#cbebff 47%,#a1dbff 100%); /* W3C */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f0f9ff', endColorstr='#a1dbff',GradientType=0 ); /* IE6-9 */
+    margin: 0;
 }
 
 .button-container {
