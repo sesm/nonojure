@@ -18,8 +18,8 @@
 ;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
-;(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
-;           :top [[1 1] [1 3] [2] [1 2] [2]]})
+(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
+           :top [[1 1] [1 3] [2] [1 2] [2]]})
 
 (defn pad [nums beg end value]
   (-> []

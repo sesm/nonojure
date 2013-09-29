@@ -3,29 +3,32 @@
 <head>
 <title>Hello world</title>
 <link rel="stylesheet" type="text/css" href="/static/css/puzzle-view.css" />
+<link rel="stylesheet" type="text/css" href="/static/css/browser-view.css">
+
 </head>
 <body>
-<div class="header"><h1>NONOGRAMMERS</h1></div>
-<div id="all-container" class="container">
-    <div class="puzzle-container center center-container" >
+<div class="head-div"><h1 class="header">Nonoj</h1><h1 class="simple-header simple-header-position ">ure</h1><h6 class="minitext">clojurecup</h6></div>
+<div id="all-container" >
+    <div class="puzzle-container " >
         <div class="puzzle center ">
-            <div id="puzzle-view" class=""></div>
+            <div id="puzzle-view" ></div>
             <div class="button-container">
                 <form >
-                    <input type="button" value="Done!" onclick="alert('There is a many different reason, why it does not work. May be because you are bad nonogramm-solver')">
-                    <input type="button" value="I give up" onclick="alert('There is a many different reason, why it does not work. May be because you are bad nonogramm-solver')">
-                    <input type="button" value="Show me"onclick="alert('There is a many different reason, why it does not work. May be because you are bad nonogramm-solver')">
+                    <input type="button" value="Done!" onclick="alert('Not implemented')">
+                    <input type="button" value="I give up" onclick="alert('Not implemented')">
+                    <input type="button" value="Show me"onclick="alert('Not implemented')">
                 </form>
             </div>
         </div>
 
     </div>
-    <div class="some-container">
-        <div class="some">mock sdskajdhsakljdhaslkjh</div>
+    <div class="browser-container">
+        <div id="browser"></div>
     </div>
 </div>
 </body>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 <script type="text/javascript" src="/static/js/main.js" ></script>
 <script>nonojure.puzzleview.init()</script>
+<script>nonojure.puzzlebrowser.init()</script>
 </html>
