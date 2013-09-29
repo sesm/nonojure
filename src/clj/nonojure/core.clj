@@ -41,6 +41,7 @@
   (GET "/" [] (file-response "resources/landing.html"))
   (GET "/browse" [] (file-response "resources/browse.html"))
   (GET "/api-examples" [] (file-response "resources/api-examples.html"))
+  (GET "/rating" [] (file-response "resources/rating.html"))
   (context "/api" [] (-> api
                          (wrap-error)
                          (wrap-json-response {:pretty true})))
