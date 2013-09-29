@@ -55,6 +55,8 @@
 }
 
 table {
+    margin-right: auto;
+    margin-left: auto;
 }
 
 table td {
@@ -67,6 +69,11 @@ table td {
 }
 
 .nothing {
+}
+
+#puzzle-view {
+    margin-right: auto;
+    margin-left: auto;
 }
 
 .num {
@@ -143,7 +150,7 @@ input[type=button], input[type=text]
 .minitext {
     position: absolute;
     top: 47px;
-    left: 240px;
+    left: 200px;
     font-size: 12px;
 }
 
@@ -158,7 +165,7 @@ input[type=button], input[type=text]
 
 .simple-header-position {
     position: absolute;
-    top: 0px;
+    top: 2px;
     left: 180px;
 }
 
