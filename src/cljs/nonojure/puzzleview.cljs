@@ -20,36 +20,47 @@
 ;(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
 ;           :top [[1 1] [1 3] [2] [1 2] [2]]})
 
-(defn pad-nils [nums length]
-  "Given a sequence of nils and desired length, adds nils to the beginning
-  to reach desired length"
-  (let [ nil-num (- length (count nums))
-         nils (take nil-num (cycle [nil]))]
-    (if (>= 0 nil-num)
-      nums
-      (into (vec nils) nums))))
+(defn pad-nils
+  "Given a sequence of numbers adds desired number of nils in the beginning, and to the end"
+  ([nums nil-num]
+    (let [ nils (take nil-num (cycle [nil]))]
+        (into (vec nils) nums)))
+  ([nums nil-beg nil-end]
+    (let [ nils-beg (take nil-beg (cycle [nil]))
+           nils-end (take nil-end (cycle [nil]))]
+        (-> (vec nils-beg)
+          (into nums)
+          (into nils-end)))))
 
 (defn create-row [nums offset row-num row-length]
   "Takes a vector of row numbers, offset (assumed to be longer then row numbers vector),
   row number and row length. Returns template for nodes construction"
-  (let [ all-nums (pad-nils nums offset)
-         num-tds (map #(if % [:td#.num %] [:td]) all-nums)
+  (let [ all-nums (pad-nils nums (- offset (count nums)))
+         num-tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) all-nums)
          cells (for [c (range row-length)] [(keyword (str "td#.cell.c" c ".r" row-num ".cell-not-clicked"))])]
     (-> [:tr]
       (into num-tds)
-      (into cells))))
+      (into cells)
+      (into (reverse num-tds)))))
 
 (defn create-header [nums offset]
   "Takes a vector of column numbers and offset. Returns template for table header."
   (let [col-num (count nums)
         longest (apply max (map count nums))
-        padded  (map #(pad-nils % longest) nums)]
+        padded  (map #(pad-nils % (- longest (count %))) nums)]
     (into []
       (for [row (range longest)]
         (let [nums-col (map #(nth % row) padded)
-              padded (pad-nils nums-col (+ offset col-num))
-              tds (map #(if % [:td#.num %] [:td]) padded)]
+              padded (pad-nils nums-col offset offset)
+              tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) padded)]
         (into [:tr] tds))))))
+
+(defn create-bottom [nums offset]
+  (let [data (create-header nums offset)]
+    (reverse data)
+    )
+  )
+
 
 (defn create-template [data]
   "Create a template for puzzle based on description"
@@ -58,6 +69,7 @@
          left-nums (get data :left)
          offset (apply max (map count left-nums))
          header (create-header top-nums offset)
+         bottom (create-bottom top-nums offset)
          rows (for [r (range width)]
                 (create-row (nth left-nums r)
                             offset
@@ -65,7 +77,8 @@
                             width))]
     (-> [:table#table.puzzle-table-non {:id "puzzle-table"}]
       (into header)
-      (into rows))))
+      (into rows)
+      (into bottom))))
 
 (defn cell-click [evt node]
   "Change the color when cell is clicked"
@@ -88,11 +101,31 @@
                                     (dommy/add-class! node "cell-not-clicked"))
       :else false)))
 
+
+(defn num-click [evt node]
+  (let [button (.-which evt)
+        not-cl (dommy/has-class? node "num-not-clicked")
+        cl     (dommy/has-class? node "num-clicked")]
+    (cond
+      (and not-cl (or (= 1 button) (= 3 button)))
+                                (do (dommy/remove-class! node "num-not-clicked")
+                                    (dommy/add-class! node "num-clicked"))
+      (and cl (or (= 1 button) (= 3 button)))
+                                (do (dommy/remove-class! node "num-clicked")
+                                    (dommy/add-class! node "num-not-clicked"))
+      :else false)))
+
 (defn add-handlers []
-  (let [cells (sel ".cell")]
+  (let [cells (sel ".cell")
+        nums (sel ".num")]
       (doseq [cell cells]
         (set! (.-onmousedown cell) #(cell-click % cell))
-        (set! (.-oncontextmenu cell) (fn [evt] false)))))
+        (set! (.-oncontextmenu cell) (fn [evt] false)))
+      (doseq [num nums]
+        (set! (.-onmousedown num) #(num-click % num))
+        (set! (.-oncontextmenu num) (fn [evt] false)))
+
+    ))
 
 (defn show [nono]
   (do
