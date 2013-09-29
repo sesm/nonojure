@@ -17,11 +17,11 @@
 ;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
-;(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
-;           :top [[1 1] [1 3] [2] [1 2] [2]]})
+(def data {:left [[] [3 1] [3] [2] [1 1] [1 1] []]
+           :top [[1 1] [1 3] [2] [1 2] [2]]})
 
 (defn pad-with
-  "Given a sequence of numbers adds desired number of nils in the beginning, and to the end"
+  "Given a sequence of numbers adds desired number of elements in the beginning, and to the end"
   ([el nums el-num]
     (let [ els (take el-num (cycle [el]))]
         (into (vec els) nums)))
@@ -40,7 +40,7 @@
          num-tds-left (pad-with [:td.nothing] num-tds pad-length)
          num-tds-right (pad-with [:td.nothing] num-tds 0 pad-length)
          cells (for [c (range row-length)] [(keyword (str "td#.cell.c" c ".r" row-num ".cell-not-clicked"))])]
-    (-> [:tr]
+    (-> [(keyword (str "tr.row.row" row-num))]
       (into num-tds-left)
       (into cells)
       (into num-tds-right))))
@@ -72,17 +72,19 @@
 (defn create-template [data]
   "Create a template for puzzle based on description"
   (let [ top-nums (get data :top)
-         width (count top-nums)
          left-nums (get data :left)
+         width (count top-nums)
+         height (count left-nums)
          offset (apply max (map count left-nums))
          header (create-header top-nums offset)
          bottom (create-bottom top-nums offset)
-         rows (for [r (range width)]
+         rows (for [r (range height)]
                 (create-row (nth left-nums r)
                             offset
                             r
                             width))]
-    (-> [:table#table.puzzle-table-non {:id "puzzle-table"}]
+    (-> [:table#table.puzzle-table-non {:id "puzzle-table"
+                                        :problem-def data}]
       (into header)
       (into rows)
       (into bottom))))
@@ -108,7 +110,6 @@
                                     (dommy/add-class! node "cell-not-clicked"))
       :else false)))
 
-
 (defn num-click [evt node]
   (let [button (.-which evt)
         not-cl (dommy/has-class? node "num-not-clicked")
@@ -122,6 +123,62 @@
                                     (dommy/add-class! node "num-not-clicked"))
       :else false)))
 
+(defn extract-solution []
+  "Extracts solution from the page"
+  (let [rows (sel ".row")
+        row-num (count rows)
+        solution (for [r (range row-num)
+                       :let [cells (sel (str ".r" r))]]
+                   (->> cells
+                     (map #(if (dommy/has-class? % "cell-clicked") 1 0))
+                     (into [])))]
+    (vec solution)))
+
+(defn extract-numbers [row]
+  "Given a sequence containing 0s and 1s returns numbers of consequetive ones,
+  i.e. given [1 0 0 1 1] will return [1 2]"
+  (->> row
+    (partition-by identity)
+    (filter #(= 1 (first %)))
+    (map count)
+    (into [])))
+
+(defn check-solution []
+  "Returns true if current state of puzzle is a valid solution, false otherwise"
+  (let [problem (cljs.reader/read-string (dommy/attr (sel1 :#puzzle-table) "problem-def"))
+        hor-prob (get problem :left)
+        ver-prob (get problem :top)
+        hor-size (count ver-prob)
+        ver-size (count hor-prob)
+        solution (extract-solution)
+        hor-sol (->> solution
+                  (map extract-numbers)
+                  (into []))
+        rows-correct (for [r (range ver-size)]
+                       (= (nth hor-sol r)
+                          (nth hor-prob r)))
+        rows-wrong (->> rows-correct
+                     (map-indexed #(if %2 :correct %1))
+                     (filter #(not (= :correct %))))
+        ver-sol (->> (range hor-size)
+                  (map (fn [num] (map #(nth % num) solution)))
+                  (map extract-numbers)
+                  (into []))
+        columns-correct (for [c (range hor-size)]
+                          (= (nth ver-sol c)
+                             (nth ver-prob c)))
+        cols-wrong (->> columns-correct
+                     (map-indexed #(if %2 :correct %1))
+                     (filter #(not (= :correct %))))]
+    {:rows-wrong rows-wrong
+     :cols-wrong cols-wrong}))
+
+(defn done-handler [evt]
+  (let [wrong (check-solution)
+        rows-wrong (get wrong :rows-wrong)
+        cols-wrong (get wrong :cols-wrong)]
+    (js/alert (str "rows" rows-wrong " cols" cols-wrong))))
+
 (defn add-handlers []
   (let [cells (sel ".cell")
         nums (sel ".num")]
@@ -130,7 +187,8 @@
         (set! (.-oncontextmenu cell) (fn [evt] false)))
       (doseq [num nums]
         (set! (.-onmousedown num) #(num-click % num))
-        (set! (.-oncontextmenu num) (fn [evt] false)))))
+        (set! (.-oncontextmenu num) (fn [evt] false)))
+      (dommy/listen! (sel1 :#button-done) :click done-handler)))
 
 (defn show [nono]
   (do
@@ -140,5 +198,5 @@
 (defn ^:export init []
   (when (and js/document
              (aget js/document "getElementById"))
-    (dommy/prepend! (sel1 :#puzzle-view) (create-template (nonojure.random/generate-puzzle 10 10)))
+    (dommy/prepend! (sel1 :#puzzle-view) (create-template (nonojure.random/generate-puzzle 8 10)))
     (add-handlers)))
