@@ -28,8 +28,8 @@
                                      :sort-order (keyword order)})))
   (GET "/nonograms/:id" [id]
        (response (db/find-nonogram-by-id id)))
-  (POST "/rate/:id" [id rating]
-        (response (db/update-rating id (Integer/parseInt rating)))))
+  (POST "/rate/:id" [id difficulty]
+        (response (db/update-difficulty id (Integer/parseInt difficulty)))))
 
 (defn wrap-error [handler]
   (fn [req]

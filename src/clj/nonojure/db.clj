@@ -25,7 +25,7 @@
                    :size (max width height)
                    :width width
                    :height height
-                   :rating 0
+                   :difficulty 0
                    :times-rated 0)]
     (mc/insert-and-return nono-coll nonogram)))
 
@@ -51,7 +51,7 @@
                               sort-order]}]
   (->> (mq/with-collection nono-coll
          (mq/find (find-clause filter-field filter-value))
-         (mq/fields [:_id :width :height :rating :times-rated])
+         (mq/fields [:_id :width :height :difficulty :times-rated])
          (mq/sort (sort-clause sort-field sort-order)))
        (map prepare-nono-for-client)))
 
@@ -59,30 +59,27 @@
   (when-let [nono (mc/find-one-as-map nono-coll {:_id (ObjectId. id)})]
     (prepare-nono-for-client nono)))
 
-(defn update-rating [id rating]
+(defn update-difficulty [id difficulty]
   (when-let [nono (mc/find-one-as-map nono-coll {:_id (ObjectId. id)})]
-    (when (<= 1 rating 5)
+    (when (<= 1 difficulty 3)
       (let [times (:times-rated nono)
-            new-rating (-> (:rating nono)
+            new-difficulty (-> (:difficulty nono)
                            (* times)
-                           (+ rating)
+                           (+ difficulty)
                            (/ (inc times)))
             new-nono (assoc nono
-                       :rating new-rating
+                       :difficulty new-difficulty
                        :times-rated (inc times))]
         (mc/update-by-id nono-coll (ObjectId. id) new-nono)
         (find-nonogram-by-id id)))))
 
 (defn fill-db-with-random-puzzles []
-  (doseq [width (range 10 31 5)
-          height (range 10 31 5)]
+  (doseq [width (range 5 31 5)
+          height (range 5 31 5)]
     (insert-nonogram (generate-puzzle height width))))
 
 
 #_(
-
-
-   (update-rating "5246d01644aed4ba3d0564cf" 1)
 
    (mc/remove nono-coll)
 

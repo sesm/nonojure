@@ -48,7 +48,7 @@ body {
     display: inline;
 }
 
-.description .rating {
+.description .difficulty {
     margin-left: 10px;
     display: inline;
 }
@@ -67,8 +67,8 @@ body {
     color: #6DA3BD;
 }
 
-.filtering .rating a {
-    width: 43px;
+.filtering .difficulty a {
+    width: 70px;
 }
 
 .filtering .size a {
@@ -92,6 +92,6 @@ body {
 }
 
 .filtering .type {
-    width: 70px;
+    width: 80px;
     display: inline-block;
 }

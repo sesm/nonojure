@@ -13,6 +13,10 @@
 
 (def root (atom nil))
 
+(def difficulties {1 "easy"
+                   2 "medium"
+                   3 "hard"})
+
 (defn ^:export showalert []
   (let [min-size (js/parseInt (.-value (sel1 :#minSize)))
         max-size (js/parseInt (.-value (sel1 :#maxSize)))
@@ -53,7 +57,7 @@
   (let [scale 20
         width (get nono "width")
         height (get nono "height")
-        rating (get nono "rating")
+        difficulty (get nono "difficulty")
         puzzle-id (get nono "id")]
     [:div.thumbnail
      {:data-id puzzle-id}
@@ -68,9 +72,10 @@
 
      [:div.description
       [:p.size (str width "×" height)]
-      [:p.rating (if (zero? rating)
+      [:p.difficulty (if (zero? difficulty)
                    "not rated"
-                   (str rating " (" (nono "times-rated") ")"))]]]))
+                   (str  (difficulties difficulty)
+                         " (" (nono "times-rated") ")"))]]]))
 
 (defn create-thumbnails [nonos]
   (when-let [old (sel1 @root :#thumbnails)]
@@ -113,12 +118,12 @@
       [:a {:data-filter "size"
            :data-value value}
        value])]
-   [:div.rating [:p.type "Rating"]
+   [:div.difficulty [:p.type "Difficulty"]
     [:a.all "all"]
-    (for [rating [1 2 3 4 5]]
-      [:a {:data-filter "rating"
-           :data-value (str (- rating 0.5) "-" (+ rating 0.499))}
-       rating])]])
+    (for [[value caption] [[1 "easy"] [2 "medium"] [3 "hard"]]]
+      [:a {:data-filter "difficulty"
+           :data-value (str (- value 0.5) "-" (+ value 0.499))}
+       caption])]])
 
 (defn add-filtering-listener [filter-div]
   (dommy/listen! [filter-div :a] :click

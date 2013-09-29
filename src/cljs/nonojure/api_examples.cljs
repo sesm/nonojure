@@ -6,11 +6,11 @@
   (:use-macros [dommy.macros :only [sel1 deftemplate]]))
 
 (def requests [["Browse puzzles"
-                :GET "/api/nonograms?filter=size&value=1-10&sort=rating&order=asc"]
+                :GET "/api/nonograms?filter=size&value=1-10&sort=difficulty&order=asc"]
                ["Get puzzle by id"
                 :GET "/api/nonograms/PUZZLE_ID"]
                ["Rate puzzle"
-                :POST "/api/rate/PUZZLE_ID?rating=5"]])
+                :POST "/api/rate/PUZZLE_ID?difficulty=3"]])
 
 (deftemplate request-node [title method example]
   [:div.request
