@@ -199,11 +199,29 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
     {:rows-wrong rows-wrong
      :cols-wrong cols-wrong}))
 
+(defn rate [diff]
+  "Submits rating for puzzle id. Assumed to be called from rating dialog.
+  Puzzle ID is implicitely taken from dialog properties"
+  (let [args (.-dialogArguments js/window)
+        id (.-id args) ]
+    (goog.net.XhrIo/send (str "/api/rate/" id "?difficulty=" diff) #(.close js/window))))
+
+(defn rate-dialog [id]
+  "Shows rate dialog for give puzzle id"
+  (let [d-attrs (js-obj)
+        _ (set! (.-id d-attrs) id)]
+    (js/showModalDialog "rating" d-attrs "dialogWidth:250; dialogHeight:100; dialogLeft:860; dialogTop: 540; resizable: no")))
+
 (defn done-handler [evt]
   (let [wrong (check-solution)
         rows-wrong (get wrong :rows-wrong)
-        cols-wrong (get wrong :cols-wrong)]
-    (js/alert (str "rows" rows-wrong " cols" cols-wrong))))
+        cols-wrong (get wrong :cols-wrong)
+        problem-def (dommy/attr (sel1 :#puzzle-table) "problem-def")
+        server-id (get problem-def :id)]
+    (if (and (empty? rows-wrong)
+             (empty? cols-wrong))
+      (rate-dialog server-id)
+      (js/alert (str "There are errors in rows:" rows-wrong "and columns:" cols-wrong)))))
 
 (defn clear-puzzle []
   (doseq [class ["num-clicked" "cell-clicked" "cell-rightclicked"]
@@ -231,9 +249,9 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
   (dommy/listen! (sel1 :#button-clear) :click clear-puzzle))
 
 (defn show [nono]
-  (do
-    (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
-    (add-handlers)))
+  (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
+  (add-handlers)
+  (dommy/remove-class! (sel1 :.puzzle-container) "hidden"))
 
 (defn ^:export init []
   (when (and js/document
