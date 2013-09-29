@@ -17,76 +17,91 @@
 ;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
-(def data {:left [[] [3 1] [3] [2] [1 1] [1 1] []]
+(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
            :top [[1 1] [1 3] [2] [1 2] [2]]})
 
-(defn pad-with
-  "Given a sequence of numbers adds desired number of elements in the beginning, and to the end"
-  ([el nums el-num]
-    (let [ els (take el-num (cycle [el]))]
-        (into (vec els) nums)))
-  ([el nums el-beg el-end]
-    (let [ els-beg (take el-beg (cycle [el]))
-           els-end (take el-end (cycle [el]))]
-        (-> (vec els-beg)
-          (into nums)
-          (into els-end)))))
+(defn pad [nums beg end value]
+  (-> []
+      (into (repeat beg value))
+      (into nums)
+      (into (repeat end value))))
+
+(defn add-class-templ [el class]
+  (update-in el [1 :class] str class))
+
+(defn update-last [seq fn & args]
+  (concat (butlast seq)
+          [(apply fn (last seq) args)]))
+
+(defn add-thick-class
+  "Adds thick-left and thick-right classes to every 5th element
+Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
+  [tds]
+  (let [tds (map-indexed
+             (fn [ind value]
+               (if (zero? (rem ind 5))
+                 (add-class-templ value " thick-left")
+                 value))
+             tds)]
+    (update-last tds add-class-templ " thick-right")))
 
 (defn create-row [nums offset row-num row-length]
   "Takes a vector of row numbers, offset (assumed to be longer then row numbers vector),
   row number and row length. Returns template for nodes construction"
   (let [ num-tds (map (fn [n] [:td.num.num-not-clicked n]) nums)
          pad-length (- offset (count nums))
-         num-tds-left (pad-with [:td.nothing] num-tds pad-length)
-         num-tds-right (pad-with [:td.nothing] num-tds 0 pad-length)
+         num-tds-left (pad num-tds pad-length 0 [:td.nothing])
+         num-tds-right(pad num-tds 0 pad-length [:td.nothing])
          cells (for [c (range row-length)] [(keyword (str "td#.cell.c" c ".r" row-num ".cell-not-clicked"))])]
-    (-> [(keyword (str "tr.row.row" row-num))]
+    (-> [(keyword (str "tr.row.row" row-num)) {:class ""}]
       (into num-tds-left)
-      (into cells)
+      (into (add-thick-class cells))
       (into num-tds-right))))
 
 (defn create-header [nums offset]
   "Takes a vector of column numbers and offset. Returns template for table header."
   (let [col-num (count nums)
         longest (apply max (map count nums))
-        padded  (map #(pad-with nil % (- longest (count %))) nums)]
+        padded  (map #(pad % (- longest (count %)) 0 nil) nums)]
     (into []
       (for [row (range longest)]
         (let [nums-col (map #(nth % row) padded)
-              padded (pad-with nil nums-col offset offset)
-              tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) padded)]
-        (into [:tr] tds))))))
+              tds  (map #(if % [:td {:class "num num-not-clicked"} %]
+                               [:td {:class "nothing"}])
+                        nums-col)]
+        (into [:tr {:class (cond (zero? row) "first"
+                                 (= row (dec longest)) "last"
+                                 :default "")}]
+              (-> (concat [[:td.hide.has-right]]
+                          (add-thick-class tds)
+                          [[:td.hide.has-left]])
+                  (pad (dec offset) (dec offset) [:td.hide]))))))))
 
 (defn create-bottom [nums offset]
-  "Takes a vector of column numbers and offset. Returns template for table bottom."
-  (let [col-num (count nums)
-        longest (apply max (map count nums))
-        padded  (map #(pad-with nil % 0 (- longest (count %))) nums)]
-    (into []
-      (for [row (range longest)]
-        (let [nums-col (map #(nth % row) padded)
-              padded (pad-with nil nums-col offset offset)
-              tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) padded)]
-          (into [:tr] tds))))))
+  (let [data (map #(add-class-templ % " footer")
+                  (create-header nums offset))]
+    data
+    )
+  )
 
 (defn create-template [data]
   "Create a template for puzzle based on description"
   (let [ top-nums (get data :top)
-         left-nums (get data :left)
          width (count top-nums)
+         left-nums (get data :left)
          height (count left-nums)
          offset (apply max (map count left-nums))
          header (create-header top-nums offset)
          bottom (create-bottom top-nums offset)
-         rows (for [r (range height)]
-                (create-row (nth left-nums r)
-                            offset
-                            r
-                            width))]
+         rows (for [r (range height)
+                    :let [row (create-row (nth left-nums r) offset r width)]]
+                (if (zero? (rem r 5))
+                  (add-class-templ row " thick-top")
+                  row))]
     (-> [:table#table.puzzle-table-non {:id "puzzle-table"
                                         :problem-def data}]
       (into header)
-      (into rows)
+      (into (update-last rows add-class-templ " thick-bottom"))
       (into bottom))))
 
 (defn cell-click [evt node]

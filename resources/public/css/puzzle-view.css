@@ -6,10 +6,10 @@
 }
 
 .container {
-    border-radius: 15px;
-    border: 4px solid black;
     padding: 30px;
     margin-bottom: 60px;
+    margin-left: 50px;
+    margin-right: 50px;
 }
 
 .center {
@@ -25,36 +25,27 @@
 
 .puzzle-container {
     border-radius: 15px;
-    border: 4px solid black;
     padding: 30px;
     margin-bottom: 60px;
-    max-width: 50%;
-    max-height: 50%;
-    height: 600px;
-    width: 49%;
     background: white;
-    float:left;
-    min-height: 600px;
-    min-width: 500px;
+    width: 75%;
+    margin-right: auto;
+    margin-left: auto;
+    border: 4px solid black;
+    opacity: 0.9;
 }
 
-.some-container {
+.browser-container {
     border-radius: 15px;
     border: 4px solid black;
     padding: 30px;
     margin-bottom: 60px;
-    max-width: 50%;
-    max-height: 50%;
-    height: 600px;
     background: white;
-    float:left;
-    width: 40%;
-    margin-left: 30px;
+    width: 75%;
+    margin-right: auto;
+    margin-left: auto;
 }
 .puzzle {
-    max-width: 500px;
-    max-height: 500px;
-    height: 450px;
 }
 
 .some {
@@ -64,6 +55,8 @@
 }
 
 table {
+    margin-right: auto;
+    margin-left: auto;
 }
 
 table td {
@@ -78,6 +71,11 @@ table td {
 .nothing {
 }
 
+#puzzle-view {
+    margin-right: auto;
+    margin-left: auto;
+}
+
 .num {
 }
 .cell-not-clicked {
@@ -89,14 +87,6 @@ table td {
         no-repeat
         50% 50%;
     background-size: 20px 20px;
-}
-
-.cell-right-line {
-    border-right: 2px solid black;
-}
-
-.cell-bottom-line {
-    border-bottom: 2px solid black;
 }
 
 .cell-rightclicked {
@@ -154,4 +144,84 @@ input[type=button], input[type=text]
 
 .num-clicked {
     color: red;
+}
+
+
+.minitext {
+    position: absolute;
+    top: 47px;
+    left: 200px;
+    font-size: 12px;
+}
+
+.header {
+    text-transform: uppercase;
+    text-shadow: -1px 2px 2px black;
+    font-size: 2.7em;
+    line-height: 1.2em;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.simple-header-position {
+    position: absolute;
+    top: 2px;
+    left: 180px;
+}
+
+.simple-header {
+    text-transform: uppercase;
+    text-shadow: -1px 2px 2px black;
+    font-size: 2.7em;
+    line-height: 1.2em;
+    font-weight: bold;
+}
+
+.hide {
+    visibility: hidden;
+}
+
+.head-div {
+    border: 2px dashed black;
+}
+
+.thick-top {
+    border-top: 2px solid black;
+}
+
+.thick-bottom {
+    border-bottom: 2px solid black;
+}
+
+.thick-left {
+    border-left: 2px solid black;
+}
+
+.thick-right {
+    border-right: 2px solid black;
+}
+
+td.hide {
+    border: 0px;
+    padding: 6px;
+}
+
+:not(.footer).last td.hide {
+    border-bottom: 1px solid black;
+    padding-bottom: 5px;
+}
+
+td.hide.has-right {
+    border-right: 1px solid black;
+    padding-right: 5px;
+}
+
+td.hide.has-left {
+    border-left: 1px solid black;
+    padding-left: 5px;
+}
+
+footer.first td.hide {
+    border-top: 1px solid black;
+    padding-top: 5px;
 }

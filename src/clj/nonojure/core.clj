@@ -17,7 +17,7 @@
 (defn- parse-filter-value [value]
   (if value
     (->> (clojure.string/split value #"-")
-         (map #(Integer/parseInt %)))
+         (map #(Double/parseDouble %)))
     nil))
 
 (defroutes api

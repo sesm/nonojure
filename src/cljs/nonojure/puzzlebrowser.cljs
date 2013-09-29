@@ -2,11 +2,16 @@
   (:require
    [dommy.utils :as utils]
    [dommy.core :as dommy]
-   [jayq.core :refer [ajax]])
+   [jayq.core :refer [ajax]]
+   [jayq.util :refer [log]]
+   [monet.canvas :as c]
+   [clojure.string :refer [join]])
   (:use-macros
    [dommy.macros :only [node sel sel1 deftemplate]]))
 
 (def num-cols 5)
+
+(def root (atom nil))
 
 (defn ^:export showalert []
   (let [min-size (js/parseInt (.-value (sel1 :#minSize)))
@@ -18,32 +23,133 @@
     (dommy/remove! (sel1 :table))
     (retrieve-thumbnails {:min-size min-size :max-size max-size :order order})))
 
+(def cell-size 6)
+
+(defn draw-grid [thumbnail nono]
+  (let [ctx (c/get-context (sel1 thumbnail :canvas) :2d)
+        width (nono "width")
+        height (nono "height")]
+    (c/translate ctx (/ cell-size 2) (/ cell-size 2))
+    (c/stroke-width ctx 0.3)
+    (doseq [x (range 0 width)
+            y (range 0 height)]
+      (c/stroke-rect ctx {:x (* x cell-size)
+                          :y (* y cell-size)
+                          :w cell-size
+                          :h cell-size}))
+    (c/stroke-width ctx 0.5)
+    (c/stroke-rect ctx {:x 0 :y 0
+                        :w (* width cell-size)
+                        :h (* height cell-size)})
+    (doseq [x (range 0 width 5)
+            y (range 0 height 5)]
+      (c/stroke-rect ctx {:x (* x cell-size)
+                          :y (* y cell-size)
+                          :w (* 5 cell-size)
+                          :h (* 5 cell-size)}))
+    thumbnail))
+
 (deftemplate nono-thumbnail [nono]
   (let [scale 20
         width (get nono "width")
         height (get nono "height")
         rating (get nono "rating")
         puzzle-id (get nono "id")]
-    [:div {:align "center"}
-     [:a {:href (str "/api/nonograms/" puzzle-id)}
-      [:img {:src "/static/img/grid.svg"
-             :width (* scale width)
-             :height (* scale height)}]
-      [:p (str width "x" height " - " rating)]]]))
+    [:div.thumbnail
+     {:data-id puzzle-id}
+     [:div.canvas-holder-outer
+      [:div.canvas-holder-inner
+       [:canvas {:width (* (inc width) cell-size)
+                 :height (* (inc height) cell-size)}]]]
+
+     #_[:img {:src "/static/img/grid.svg"
+              :width (* scale width)
+              :height (* scale height)}]
+
+     [:div.description
+      [:p.size (str width "×" height)]
+      [:p.rating (if (zero? rating)
+                   "not rated"
+                   (str rating " (" (nono "times-rated") ")"))]]]))
 
 (defn create-thumbnails [nonos]
-  (let [cells (for [nono nonos] [:td (nono-thumbnail (js->clj nono))])
+  (when-let [old (sel1 @root :#thumbnails)]
+    (dommy/remove! old))
+  (let [cells (for [nono nonos]
+                (let [nono (js->clj nono)]
+                  (-> nono nono-thumbnail (draw-grid nono))))
         padded-cells (concat cells (repeat (dec num-cols) [:td ""]))
         rows (partition num-cols padded-cells)
         contents (for [row rows] [:tr row])
         table [:table#table.puzzle-browser{:id "puzzle-browser" :border 1} contents]]
-    (dommy/append! (sel1 :body) table)))
+    (dommy/append! @root [:div#thumbnails cells])))
 
-(defn retrieve-thumbnails [{:keys [min-size max-size order]
-                            :or {min-size 1 max-size 100 order :asc}}]
-  (let [url (str "/api/nonograms?filter=size&value=" min-size "-" max-size "&sort=rating&order=" order)]
-    (ajax url {:success create-thumbnails
+(defn retrieve-thumbnails [{:keys [filter value sort order]}]
+  (let [filter-clauses (if filter [["filter" filter]
+                                   ["value" value]]
+                           [])
+        sort-clauses (if sort [["sort" sort]
+                              ["order" order]]
+                        [])
+        clauses-str (->> (concat filter-clauses sort-clauses)
+                         (map #(join "=" %))
+                         (join "&"))
+        url (str "/api/nonograms" (if (empty? clauses-str) "" "?") clauses-str)]
+    (log (str "Sending " url))
+    (ajax url {:success #(create-thumbnails %)
                :error #(js/alert "Error")})))
 
+(defn reload-thumbnails []
+  (let [selected (sel1 @root :.selected)
+        clause {:filter (dommy/attr selected :data-filter)
+                :value (dommy/attr selected :data-value)}]
+    (retrieve-thumbnails clause)))
+
+(deftemplate filtering []
+  [:div.filtering
+   [:div.size [:p.type "Size"]
+    [:a.all.selected "all"]
+    (for [value ["1-10" "11-20" "21-30"]]
+      [:a {:data-filter "size"
+           :data-value value}
+       value])]
+   [:div.rating [:p.type "Rating"]
+    [:a.all "all"]
+    (for [rating [1 2 3 4 5]]
+      [:a {:data-filter "rating"
+           :data-value (str (- rating 0.5) "-" (+ rating 0.499))}
+       rating])]])
+
+(defn add-filtering-listener [filter-div]
+  (dommy/listen! [filter-div :a] :click
+    (fn [event]
+      (let [a (.-selectedTarget event)]
+        (when-not (dommy/has-class? a "selected")
+          (-> (sel1 filter-div :.selected)
+              (dommy/remove-class! "selected"))
+          (dommy/add-class! a "selected")
+          (reload-thumbnails )))))
+  filter-div)
+
+(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
+           :top [[1 1] [1 3] [2] [1 2] [2]]})
+
+(defn show-puzzle [puzzle]
+  (let [view {:left (get puzzle "left") :top (get puzzle "top")}]
+  (nonojure.puzzleview/show view)))
+
+(defn add-thumbnail-listener []
+  (dommy/listen! [@root :.thumbnail] :click
+    (fn [event]
+      (let [thumb (.-selectedTarget event)
+            id (dommy/attr thumb :data-id)
+            url (str "/api/nonograms/" id)]
+        (ajax url {:success #(show-puzzle (js->clj %))
+                   :error #(do (log "Error loading puzzle")
+                               (log %))})))))
+
 (defn ^:export init []
-  (retrieve-thumbnails {:min-size 1 :max-size 100 :order :asc}))
+  (reset! root (sel1 :#browser))
+  (dommy/append! @root (add-filtering-listener (filtering)))
+  (add-thumbnail-listener)
+  (reload-thumbnails))
