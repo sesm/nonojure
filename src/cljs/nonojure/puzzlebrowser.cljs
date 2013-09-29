@@ -3,11 +3,15 @@
    [dommy.utils :as utils]
    [dommy.core :as dommy]
    [jayq.core :refer [ajax]]
-   [monet.canvas :as c])
+   [jayq.util :refer [log]]
+   [monet.canvas :as c]
+   [clojure.string :refer [join]])
   (:use-macros
    [dommy.macros :only [node sel sel1 deftemplate]]))
 
 (def num-cols 5)
+
+(def root (atom nil))
 
 (defn ^:export showalert []
   (let [min-size (js/parseInt (.-value (sel1 :#minSize)))
@@ -67,7 +71,9 @@
                    "not rated"
                    (str rating " (" (nono "times-rated") ")"))]]]))
 
-(defn create-thumbnails [holder nonos]
+(defn create-thumbnails [nonos]
+  (when-let [old (sel1 @root :#thumbnails)]
+    (dommy/remove! old))
   (let [cells (for [nono nonos]
                 (let [nono (js->clj nono)]
                   (-> nono nono-thumbnail (draw-grid nono))))
@@ -75,15 +81,58 @@
         rows (partition num-cols padded-cells)
         contents (for [row rows] [:tr row])
         table [:table#table.puzzle-browser{:id "puzzle-browser" :border 1} contents]]
-    (dommy/append! holder cells)))
+    (dommy/append! @root [:div#thumbnails cells])))
 
-(defn retrieve-thumbnails [{:keys [min-size max-size order]
-                            :or {min-size 1 max-size 100 order :asc}}
-                           holder]
-  (let [url (str "/api/nonograms?filter=size&value=" min-size "-" max-size "&sort=rating&order=" order)]
-    (ajax url {:success #(create-thumbnails holder %)
+(defn retrieve-thumbnails [{:keys [filter value sort order]}]
+  (let [filter-clauses (if filter [["filter" filter]
+                                   ["value" value]]
+                           [])
+        sort-clauses (if sort [["sort" sort]
+                              ["order" order]]
+                        [])
+        clauses-str (->> (concat filter-clauses sort-clauses)
+                         (map #(join "=" %))
+                         (join "&"))
+        url (str "/api/nonograms" (if (empty? clauses-str) "" "?") clauses-str)]
+    (log (str "Sending " url))
+    (ajax url {:success #(create-thumbnails %)
                :error #(js/alert "Error")})))
 
+(defn reload-thumbnails []
+  (let [selected (sel1 @root :.selected)
+        clause {:filter (dommy/attr selected :data-filter)
+                :value (dommy/attr selected :data-value)}]
+    (retrieve-thumbnails clause)))
+
+(deftemplate filtering []
+  [:div.filtering
+   [:div.size [:p.type "Size"]
+    [:a.all.selected {:href "#"} "all"]
+    (for [value ["1-10" "11-20" "21-30"]]
+      [:a {:href "#"
+           :data-filter "size"
+           :data-value value}
+       value])]
+   [:div.rating [:p.type "Rating"]
+    [:a.all {:href "#"} "all"]
+    (for [rating [1 2 3 4 5]]
+      [:a {:href "#"
+           :data-filter "rating"
+           :data-value (str (- rating 0.5) "-" (+ rating 0.499))}
+       rating])]])
+
+(defn add-filtering-listener [filter-div]
+  (dommy/listen! [filter-div :a] :click
+    (fn [event]
+      (let [a (.-selectedTarget event)]
+        (when-not (dommy/has-class? a "selected")
+          (-> (sel1 filter-div :.selected)
+              (dommy/remove-class! "selected"))
+          (dommy/add-class! a "selected")
+          (reload-thumbnails )))))
+  filter-div)
+
 (defn ^:export init []
-  (retrieve-thumbnails {:min-size 1 :max-size 100 :order :asc}
-                       (sel1 :#browser)))
+  (reset! root (sel1 :#browser))
+  (dommy/append! @root (add-filtering-listener (filtering)))
+  (reload-thumbnails))
