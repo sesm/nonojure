@@ -1,22 +1,9 @@
-# clony
-### a modern Clojure webapp example
+# Nonojure
+### Webapp for solving [nonogram](http://en.wikipedia.org/wiki/Nonogram) puzzles
 
-This is an example of web application, based on http-kit and websockets and
-utilizing excellent Stuart Sierra's [workflow post](http://thinkrelevance.com/blog/2013/06/04/clojure-workflow-reloaded).
+Webapp consists of 2 parts: single-page clojurescript app and server that stores and serves nonograms via REST API.
 
-To run this application:
+Website: [http://nonojure.clojurecup.com](http://nonojure.clojurecup.com)
 
-1. `lein cljsbuild once`
-2. `lein uberjar`
-3. `java -jar target/clony-0.1.0-SNAPSHOT-standalone.jar`
-4. open `localhost:8081` in your browser
-5. click the pony to have some pony wisdom
+Examples of API: [http://nonojure.clojurecup.com/api-examples](http://nonojure.clojurecup.com/api-examples)
 
-Please feel free to copy the code and use it in any way.
-
-## Development
-
-Development workflow is supposed to be similar to Stuart's: stay in `user`
-namespace and run `(refresh)` to recompile changed namespaces and reload
-web application. Application "nodes" were designed with possibility of partial
-restart in mind, so please modify this according to your needs.
