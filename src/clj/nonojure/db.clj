@@ -74,8 +74,8 @@
         (find-nonogram-by-id id)))))
 
 (defn fill-db-with-random-puzzles []
-  (doseq [width (range 5 31 5)
-          height (range 5 31 5)]
+  (doseq [width (range 10 31 5)
+          height (range 10 31 5)]
     (insert-nonogram (generate-puzzle height width))))
 
 

@@ -14,7 +14,8 @@
                  [com.novemberain/monger "1.5.0"]
 
                  [jayq "2.4.0"]
-                 [prismatic/dommy "0.1.1"]]
+                 [prismatic/dommy "0.1.1"]
+                 [rm-hull/monet "0.1.8"]]
   :main nonojure.runner
   :aot [nonojure.runner]
   :cljsbuild {:builds
