@@ -78,11 +78,23 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
                   (pad (dec offset) (dec offset) [:td.hide]))))))))
 
 (defn create-bottom [nums offset]
-  (let [data (map #(add-class-templ % " footer")
-                  (create-header nums offset))]
-    data
-    )
-  )
+  "Takes a vector of column numbers and offset. Returns template for table bottom."
+  (let [col-num (count nums)
+        longest (apply max (map count nums))
+        padded  (map #(pad % 0 (- longest (count %)) nil) nums)]
+    (into []
+      (for [row (range longest)]
+        (let [nums-col (map #(nth % row) padded)
+              tds  (map #(if % [:td {:class "num num-not-clicked"} %]
+                           [:td {:class "nothing"}])
+                     nums-col)]
+          (into [:tr {:class (cond (zero? row) "first footer"
+                               (= row (dec longest)) "last footer"
+                               :default "footer")}]
+            (-> (concat [[:td.hide.has-right]]
+                  (add-thick-class tds)
+                  [[:td.hide.has-left]])
+              (pad (dec offset) (dec offset) [:td.hide]))))))))
 
 (defn create-template [data]
   "Create a template for puzzle based on description"

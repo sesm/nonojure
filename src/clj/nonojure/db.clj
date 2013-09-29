@@ -75,8 +75,12 @@
 
 (defn fill-db-with-random-puzzles []
   (doseq [width (range 5 31 5)
-          height (range 5 31 5)]
-    (insert-nonogram (generate-puzzle height width))))
+          height (range 5 31 5)
+          :let [new (insert-nonogram (generate-puzzle height width))
+                id (str (:_id new))]
+          times (range (rand-int 5))]
+    (println new id)
+    (update-difficulty id (inc (rand-int 3)))))
 
 
 #_(
