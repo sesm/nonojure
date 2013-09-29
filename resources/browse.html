@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <title>Browse Nonograms</title>
+    </head>
+    <body>
+        Order
+        <h1>
+            <input class="order" name="order" type="radio" value="ascending" checked="checked" />Ascending</h1>
+        <h1>
+            <input class="order" name="order" type="radio" value="descending" />Descending</h1>
+        Filter
+        <h1>
+            Min&nbsp;<input maxlength="2" id="minSize" size="8" type="text" value="0" />&nbsp;
+            Max&nbsp;<input maxlength="2" id="maxSize" size="8" type="text" value="100" /></h1>
+        <h1>
+            <input name="browse" type="button" value="Browse" onClick="nonojure.puzzlebrowser.showalert()" /></h1>
+    </body>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script type="text/javascript" src="/static/js/main.js" ></script>
+<script>nonojure.puzzlebrowser.init()</script>
+</html>

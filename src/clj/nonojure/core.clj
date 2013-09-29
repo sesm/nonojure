@@ -39,6 +39,7 @@
 
 (defroutes app-routes
   (GET "/" [] (file-response "resources/landing.html"))
+  (GET "/browse" [] (file-response "resources/browse.html"))
   (GET "/api-examples" [] (file-response "resources/api-examples.html"))
   (context "/api" [] (-> api
                          (wrap-error)
