@@ -20,47 +20,54 @@
 ;(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
 ;           :top [[1 1] [1 3] [2] [1 2] [2]]})
 
-(defn pad-nils
+(defn pad-with
   "Given a sequence of numbers adds desired number of nils in the beginning, and to the end"
-  ([nums nil-num]
-    (let [ nils (take nil-num (cycle [nil]))]
-        (into (vec nils) nums)))
-  ([nums nil-beg nil-end]
-    (let [ nils-beg (take nil-beg (cycle [nil]))
-           nils-end (take nil-end (cycle [nil]))]
-        (-> (vec nils-beg)
+  ([el nums el-num]
+    (let [ els (take el-num (cycle [el]))]
+        (into (vec els) nums)))
+  ([el nums el-beg el-end]
+    (let [ els-beg (take el-beg (cycle [el]))
+           els-end (take el-end (cycle [el]))]
+        (-> (vec els-beg)
           (into nums)
-          (into nils-end)))))
+          (into els-end)))))
 
 (defn create-row [nums offset row-num row-length]
   "Takes a vector of row numbers, offset (assumed to be longer then row numbers vector),
   row number and row length. Returns template for nodes construction"
-  (let [ all-nums (pad-nils nums (- offset (count nums)))
-         num-tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) all-nums)
+  (let [ num-tds (map (fn [n] [:td.num.num-not-clicked n]) nums)
+         pad-length (- offset (count nums))
+         num-tds-left (pad-with [:td.nothing] num-tds pad-length)
+         num-tds-right (pad-with [:td.nothing] num-tds 0 pad-length)
          cells (for [c (range row-length)] [(keyword (str "td#.cell.c" c ".r" row-num ".cell-not-clicked"))])]
     (-> [:tr]
-      (into num-tds)
+      (into num-tds-left)
       (into cells)
-      (into (reverse num-tds)))))
+      (into num-tds-right))))
 
 (defn create-header [nums offset]
   "Takes a vector of column numbers and offset. Returns template for table header."
   (let [col-num (count nums)
         longest (apply max (map count nums))
-        padded  (map #(pad-nils % (- longest (count %))) nums)]
+        padded  (map #(pad-with nil % (- longest (count %))) nums)]
     (into []
       (for [row (range longest)]
         (let [nums-col (map #(nth % row) padded)
-              padded (pad-nils nums-col offset offset)
+              padded (pad-with nil nums-col offset offset)
               tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) padded)]
         (into [:tr] tds))))))
 
 (defn create-bottom [nums offset]
-  (let [data (create-header nums offset)]
-    (reverse data)
-    )
-  )
-
+  "Takes a vector of column numbers and offset. Returns template for table bottom."
+  (let [col-num (count nums)
+        longest (apply max (map count nums))
+        padded  (map #(pad-with nil % 0 (- longest (count %))) nums)]
+    (into []
+      (for [row (range longest)]
+        (let [nums-col (map #(nth % row) padded)
+              padded (pad-with nil nums-col offset offset)
+              tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) padded)]
+          (into [:tr] tds))))))
 
 (defn create-template [data]
   "Create a template for puzzle based on description"
@@ -123,9 +130,7 @@
         (set! (.-oncontextmenu cell) (fn [evt] false)))
       (doseq [num nums]
         (set! (.-onmousedown num) #(num-click % num))
-        (set! (.-oncontextmenu num) (fn [evt] false)))
-
-    ))
+        (set! (.-oncontextmenu num) (fn [evt] false)))))
 
 (defn show [nono]
   (do
