@@ -155,3 +155,19 @@ input[type=button], input[type=text]
 .num-clicked {
     color: red;
 }
+
+.thick-top {
+    border-top: 2px solid black;
+}
+
+.thick-bottom {
+    border-bottom: 2px solid black;
+}
+
+.thick-left {
+    border-left: 2px solid black;
+}
+
+.thick-right {
+    border-right: 2px solid black;
+}

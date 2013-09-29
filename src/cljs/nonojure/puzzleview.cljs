@@ -20,28 +20,41 @@
 ;(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
 ;           :top [[1 1] [1 3] [2] [1 2] [2]]})
 
+(defn pad [nums beg end value]
+  (-> []
+      (into (repeat beg value))
+      (into nums)
+      (into (repeat end value))))
+
 (defn pad-nils
   "Given a sequence of numbers adds desired number of nils in the beginning, and to the end"
   ([nums nil-num]
-    (let [ nils (take nil-num (cycle [nil]))]
-        (into (vec nils) nums)))
+     (pad-nils nums nil-num 0))
   ([nums nil-beg nil-end]
-    (let [ nils-beg (take nil-beg (cycle [nil]))
-           nils-end (take nil-end (cycle [nil]))]
-        (-> (vec nils-beg)
-          (into nums)
-          (into nils-end)))))
+     (pad nums nil-beg nil-end nil)))
+
+(defn add-thick-class [tds]
+  (map-indexed
+   (fn [ind value]
+     (let [class-to-add (case (rem ind 5)
+                          0 " thick-left"
+                          4 " thick-right"
+                          "")]
+       (update-in value [1 :class] str class-to-add))
+     )
+   tds))
 
 (defn create-row [nums offset row-num row-length]
   "Takes a vector of row numbers, offset (assumed to be longer then row numbers vector),
   row number and row length. Returns template for nodes construction"
   (let [ all-nums (pad-nils nums (- offset (count nums)))
          num-tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) all-nums)
-         cells (for [c (range row-length)] [(keyword (str "td#.cell.c" c ".r" row-num ".cell-not-clicked"))])]
-    (-> [:tr]
-      (into num-tds)
-      (into cells)
-      (into (reverse num-tds)))))
+         cells (for [c (range row-length)]
+                 [:td {:class (str "cell c" c " r" row-num " cell-not-clicked")}])]
+    (-> [:tr {:class ""}]
+        (into num-tds)
+        (into (add-thick-class cells))
+        (into (reverse num-tds)))))
 
 (defn create-header [nums offset]
   "Takes a vector of column numbers and offset. Returns template for table header."
@@ -51,9 +64,11 @@
     (into []
       (for [row (range longest)]
         (let [nums-col (map #(nth % row) padded)
-              padded (pad-nils nums-col offset offset)
-              tds (map #(if % [:td.num.num-not-clicked %] [:td.nothing]) padded)]
-        (into [:tr] tds))))))
+              tds  (map #(if % [:td {:class "num num-not-clicked"} %]
+                               [:td {:class "nothing"}])
+                        nums-col)]
+        (into [:tr] (pad (add-thick-class tds)
+                         offset offset [:td.nothing])))))))
 
 (defn create-bottom [nums offset]
   (let [data (create-header nums offset)]
@@ -70,11 +85,13 @@
          offset (apply max (map count left-nums))
          header (create-header top-nums offset)
          bottom (create-bottom top-nums offset)
-         rows (for [r (range width)]
-                (create-row (nth left-nums r)
-                            offset
-                            r
-                            width))]
+         rows (for [r (range width)
+                    :let [class-to-add (case (mod r 5)
+                                         0 " thick-top"
+                                         4 " thick-bottom"
+                                         "")
+                          row (create-row (nth left-nums r) offset r width)]]
+                (update-in row [1 :class] str class-to-add))]
     (-> [:table#table.puzzle-table-non {:id "puzzle-table"}]
       (into header)
       (into rows)
