@@ -149,7 +149,8 @@
       (let [thumb (.-selectedTarget event)
             id (dommy/attr thumb :data-id)
             url (str "/api/nonograms/" id)]
-        (ajax url {:success #(show-puzzle (js->clj %))
+        (ajax url {:success #(do (show-puzzle (js->clj %))
+                               (.scrollTo js/window 0 0))
                    :error #(do (log "Error loading puzzle")
                                (log %))})))))
 
