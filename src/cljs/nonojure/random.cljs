@@ -18,12 +18,3 @@
     {:left left
      :top top
      :solution (map #(apply str %) rows)}))
-
-
-(defn test-random [n m]
-  (let [puzzle (generate-puzzle n m)]
-   (println (format "\nPuzzle %dx%d" n m))
-   (doseq [row (:solution puzzle)] (println row))
-   (println "left:" (:left puzzle))
-   (println "top:" (:top puzzle))))
-

@@ -9,6 +9,8 @@
   (:use-macros
    [dommy.macros :only [node sel sel1 deftemplate]]))
 
+(declare retrieve-thumbnails)
+
 (def num-cols 5)
 
 (def root (atom nil))
@@ -17,7 +19,7 @@
                    2 "medium"
                    3 "hard"})
 
-(defn ^:export showalert []
+(defn ^:export browse []
   (let [min-size (js/parseInt (.-value (sel1 :#minSize)))
         max-size (js/parseInt (.-value (sel1 :#maxSize)))
         order (->> (sel ".order")
