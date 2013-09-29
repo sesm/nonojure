@@ -18,6 +18,8 @@
 ;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
+(def state (atom {:clicking :none})) ;one of [:none :left :right]
+
 (def data {:left [[3 1] [3] [2] [1 1] [1 1]]
            :top [[1 1] [1 3] [2] [1 2] [2]]})
 
@@ -133,9 +135,11 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
   "Change the color when cell is clicked"
   (case (.-which evt)
     1 (do (dommy/toggle-class! node "cell-clicked")
-          (dommy/remove-class! node "cell-rightclicked"))
+          (dommy/remove-class! node "cell-rightclicked")
+          (swap! state assoc :clicking :left))
     3 (do (dommy/toggle-class! node "cell-rightclicked")
-          (dommy/remove-class! node "cell-clicked"))
+          (dommy/remove-class! node "cell-clicked")
+          (swap! state assoc :clicking :right))
     nil))
 
 (defn num-click [evt node]
@@ -201,22 +205,30 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
         cols-wrong (get wrong :cols-wrong)]
     (js/alert (str "rows" rows-wrong " cols" cols-wrong))))
 
+(defn clear-puzzle []
+  (doseq [class ["num-clicked" "cell-clicked" "cell-rightclicked"]
+          el (sel (str "." class))]
+    (dommy/remove-class! el class)))
+
 (defn add-handlers []
   (let [cells (sel ".cell")
         nums (sel ".num")]
       (doseq [cell cells]
-        (set! (.-onmousedown cell) #(cell-click % cell))
-        (set! (.-oncontextmenu cell) (fn [evt] false)))
+        (set! (.-onmousedown cell) #(do (cell-click % cell) false))
+        (set! (.-oncontextmenu cell) (fn [evt] false))
+        (set! (.-onmousemove cell) (fn [evt]
+                                     (let [t (.-currentTarget evt)
+                                           s (:clicking @state)]
+                                       (if (and (= s :left) (not (dommy/has-class? t "cell-clicked")))
+                                         ((.-onmousedown cell) evt)
+                                         (if (and (= s :right) (not (dommy/has-class? t "cell-rightclicked")))
+                                           ((.-oncontextmenu cell) evt)
+                                           false))))))
       (doseq [num nums]
         (set! (.-onmousedown num) #(num-click % num))
         (set! (.-oncontextmenu num) (fn [evt] false)))
       (dommy/listen! (sel1 :#button-done) :click done-handler))
   (dommy/listen! (sel1 :#button-clear) :click clear-puzzle))
-
-(defn clear-puzzle []
-  (doseq [class ["num-clicked" "cell-clicked" "cell-rightclicked"]
-          el (sel (str "." class))]
-    (dommy/remove-class! el class)))
 
 (defn show [nono]
   (do
