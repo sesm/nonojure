@@ -3,6 +3,7 @@
 }
 .puzzle-table-non td, .puzzle-table-non th {
     padding:5px;
+    cursor: pointer;
 }
 
 .container {

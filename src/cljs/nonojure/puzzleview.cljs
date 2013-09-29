@@ -1,7 +1,8 @@
 (ns nonojure.puzzleview
   (:require
    [dommy.utils :as utils]
-   [dommy.core :as dommy])
+   [dommy.core :as dommy]
+   [jayq.util :refer [log]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]))
 
@@ -48,11 +49,15 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
 (defn create-row [nums offset row-num row-length]
   "Takes a vector of row numbers, offset (assumed to be longer then row numbers vector),
   row number and row length. Returns template for nodes construction"
-  (let [ num-tds (map (fn [n] [:td.num.num-not-clicked n]) nums)
+  (let [ num-tds (map-indexed
+                  (fn [ind n]
+                    [:td.num {:data-coord (str "l" ind "x" row-num)} n])
+                  nums)
          pad-length (- offset (count nums))
          num-tds-left (pad num-tds pad-length 0 [:td.nothing])
          num-tds-right(pad num-tds 0 pad-length [:td.nothing])
-         cells (for [c (range row-length)] [(keyword (str "td#.cell.c" c ".r" row-num ".cell-not-clicked"))])]
+         cells (for [c (range row-length)]
+                 [:td {:class (str "cell c" c " r" row-num " cell-not-clicked")}])]
     (-> [(keyword (str "tr.row.row" row-num)) {:class ""}]
       (into num-tds-left)
       (into (add-thick-class cells))
@@ -66,8 +71,12 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
     (into []
       (for [row (range longest)]
         (let [nums-col (map #(nth % row) padded)
-              tds  (map #(if % [:td {:class "num num-not-clicked"} %]
-                               [:td {:class "nothing"}])
+              tds  (map-indexed
+                    #(if %2 [:td {:class "num"
+                                  :data-coord (str "t" %1 "x"
+                                                   (->> (nth nums %1) count (- longest) (- row)))}
+                             %2]
+                         [:td {:class "nothing"}])
                         nums-col)]
         (into [:tr {:class (cond (zero? row) "first"
                                  (= row (dec longest)) "last"
@@ -85,8 +94,11 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
     (into []
       (for [row (range longest)]
         (let [nums-col (map #(nth % row) padded)
-              tds  (map #(if % [:td {:class "num num-not-clicked"} %]
-                           [:td {:class "nothing"}])
+              tds  (map-indexed
+                    #(if %2
+                       [:td {:class "num num-not-clicked"
+                             :data-coord (str "t" %1 "x" row)} %2]
+                       [:td {:class "nothing"}])
                      nums-col)]
           (into [:tr {:class (cond (zero? row) "first footer"
                                (= row (dec longest)) "last footer"
@@ -111,7 +123,8 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
                   (add-class-templ row " thick-top")
                   row))]
     (-> [:table#table.puzzle-table-non {:id "puzzle-table"
-                                        :problem-def data}]
+                                        :problem-def data
+                                        :data-help "test"}]
       (into header)
       (into (update-last rows add-class-templ " thick-bottom"))
       (into bottom))))
@@ -138,17 +151,11 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
       :else false)))
 
 (defn num-click [evt node]
-  (let [button (.-which evt)
-        not-cl (dommy/has-class? node "num-not-clicked")
-        cl     (dommy/has-class? node "num-clicked")]
-    (cond
-      (and not-cl (or (= 1 button) (= 3 button)))
-                                (do (dommy/remove-class! node "num-not-clicked")
-                                    (dommy/add-class! node "num-clicked"))
-      (and cl (or (= 1 button) (= 3 button)))
-                                (do (dommy/remove-class! node "num-clicked")
-                                    (dommy/add-class! node "num-not-clicked"))
-      :else false)))
+  (let [td (.-currentTarget evt)
+        coord (dommy/attr td :data-coord)
+        query (str "td[data-coord*='" coord "']")]
+    (doseq [el (sel query)]
+      (dommy/toggle-class! el "num-clicked"))))
 
 (defn extract-solution []
   "Extracts solution from the page"
