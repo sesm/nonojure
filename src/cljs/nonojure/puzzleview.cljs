@@ -57,7 +57,7 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
          num-tds-left (pad num-tds pad-length 0 [:td.nothing])
          num-tds-right(pad num-tds 0 pad-length [:td.nothing])
          cells (for [c (range row-length)]
-                 [:td {:class (str "cell c" c " r" row-num " cell-not-clicked")}])]
+                 [:td {:class (str "cell c" c " r" row-num)}])]
     (-> [(keyword (str "tr.row.row" row-num)) {:class ""}]
       (into num-tds-left)
       (into (add-thick-class cells))
@@ -96,7 +96,7 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
         (let [nums-col (map #(nth % row) padded)
               tds  (map-indexed
                     #(if %2
-                       [:td {:class "num num-not-clicked"
+                       [:td {:class "num"
                              :data-coord (str "t" %1 "x" row)} %2]
                        [:td {:class "nothing"}])
                      nums-col)]
@@ -131,24 +131,12 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
 
 (defn cell-click [evt node]
   "Change the color when cell is clicked"
-  (let [button (.-which evt)
-        not-cl (dommy/has-class? node "cell-not-clicked")
-        cl     (dommy/has-class? node "cell-clicked")
-        r-cl   (dommy/has-class? node "cell-rightclicked")]
-    (cond
-      (and not-cl (= 1 button)) (do (dommy/remove-class! node "cell-not-clicked")
-                                    (dommy/add-class! node "cell-clicked"))
-      (and not-cl (= 3 button)) (do (dommy/remove-class! node "cell-not-clicked")
-                                    (dommy/add-class! node "cell-rightclicked"))
-      (and cl     (= 1 button)) (do (dommy/remove-class! node "cell-clicked")
-                                    (dommy/add-class! node "cell-not-clicked"))
-      (and cl     (= 3 button)) (do (dommy/remove-class! node "cell-clicked")
-                                    (dommy/add-class! node "cell-rightclicked"))
-      (and r-cl   (= 1 button)) (do (dommy/remove-class! node "cell-rightclicked")
-                                    (dommy/add-class! node "cell-clicked"))
-      (and r-cl   (= 3 button)) (do (dommy/remove-class! node "cell-rightclicked")
-                                    (dommy/add-class! node "cell-not-clicked"))
-      :else false)))
+  (case (.-which evt)
+    1 (do (dommy/toggle-class! node "cell-clicked")
+          (dommy/remove-class! node "cell-rightclicked"))
+    3 (do (dommy/toggle-class! node "cell-rightclicked")
+          (dommy/remove-class! node "cell-clicked"))
+    nil))
 
 (defn num-click [evt node]
   (let [td (.-currentTarget evt)
@@ -222,7 +210,13 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
       (doseq [num nums]
         (set! (.-onmousedown num) #(num-click % num))
         (set! (.-oncontextmenu num) (fn [evt] false)))
-      (dommy/listen! (sel1 :#button-done) :click done-handler)))
+      (dommy/listen! (sel1 :#button-done) :click done-handler))
+  (dommy/listen! (sel1 :#button-clear) :click clear-puzzle))
+
+(defn clear-puzzle []
+  (doseq [class ["num-clicked" "cell-clicked" "cell-rightclicked"]
+          el (sel (str "." class))]
+    (dommy/remove-class! el class)))
 
 (defn show [nono]
   (do
