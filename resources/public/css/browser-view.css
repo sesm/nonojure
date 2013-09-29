@@ -6,8 +6,9 @@ body {
     text-align: center;
     margin-left: auto;
     margin-right: auto;
-    width: 75%;
+    width: 85%;
     margin-bottom: -30px;
+    overflow: hidden;
 }
 
 .thumbnail {
