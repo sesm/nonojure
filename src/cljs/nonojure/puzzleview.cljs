@@ -1,7 +1,8 @@
 (ns nonojure.puzzleview
   (:require
    [dommy.utils :as utils]
-   [dommy.core :as dommy])
+   [dommy.core :as dommy]
+   [jayq.util :refer [log]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]))
 
@@ -33,16 +34,24 @@
   ([nums nil-beg nil-end]
      (pad nums nil-beg nil-end nil)))
 
-(defn add-thick-class [tds]
-  (map-indexed
-   (fn [ind value]
-     (let [class-to-add (case (rem ind 5)
-                          0 " thick-left"
-                          4 " thick-right"
-                          "")]
-       (update-in value [1 :class] str class-to-add))
-     )
-   tds))
+(defn add-class-templ [el class]
+  (update-in el [1 :class] str class))
+
+(defn update-last [seq fn & args]
+  (concat (butlast seq)
+          [(apply fn (last seq) args)]))
+
+(defn add-thick-class
+  "Adds thick-left and thick-right classes to every 5th element
+Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
+  [tds]
+  (let [tds (map-indexed
+             (fn [ind value]
+               (if (zero? (rem ind 5))
+                 (add-class-templ value " thick-left")
+                 value))
+             tds)]
+    (update-last tds add-class-templ " thick-right")))
 
 (defn create-row [nums offset row-num row-length]
   "Takes a vector of row numbers, offset (assumed to be longer then row numbers vector),
@@ -67,12 +76,18 @@
               tds  (map #(if % [:td {:class "num num-not-clicked"} %]
                                [:td {:class "nothing"}])
                         nums-col)]
-        (into [:tr] (pad (add-thick-class tds)
-                         offset offset [:td.nothing])))))))
+        (into [:tr {:class (cond (zero? row) "first"
+                                 (= row (dec longest)) "last"
+                                 :default "")}]
+              (-> (concat [[:td.hide.has-right]]
+                          (add-thick-class tds)
+                          [[:td.hide.has-left]])
+                  (pad (dec offset) (dec offset) [:td.hide]))))))))
 
 (defn create-bottom [nums offset]
-  (let [data (create-header nums offset)]
-    (reverse data)
+  (let [data (map #(add-class-templ % " footer")
+                  (create-header nums offset))]
+    data
     )
   )
 
@@ -86,15 +101,13 @@
          header (create-header top-nums offset)
          bottom (create-bottom top-nums offset)
          rows (for [r (range width)
-                    :let [class-to-add (case (mod r 5)
-                                         0 " thick-top"
-                                         4 " thick-bottom"
-                                         "")
-                          row (create-row (nth left-nums r) offset r width)]]
-                (update-in row [1 :class] str class-to-add))]
+                    :let [row (create-row (nth left-nums r) offset r width)]]
+                (if (zero? (rem r 5))
+                  (add-class-templ row " thick-top")
+                  row))]
     (-> [:table#table.puzzle-table-non {:id "puzzle-table"}]
       (into header)
-      (into rows)
+      (into (update-last rows add-class-templ " thick-bottom"))
       (into bottom))))
 
 (defn cell-click [evt node]
