@@ -1,12 +1,10 @@
 (defproject nonojure "0.0.1-SNAPSHOT"
   :description "Nonogram puzzles"
   :source-paths ["src/clj"]
-  :plugins [[lein-cljsbuild "0.3.3"]
-            [lein-midje "3.0.0"]]
+  :plugins [[lein-cljsbuild "0.3.3"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-1909"]
 
-                 [midje "1.6-beta1"]
                  [com.taoensso/timbre "2.6.1"]
                  [http-kit "2.1.10"]
                  [ring/ring-json "0.2.0"]
