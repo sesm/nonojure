@@ -140,7 +140,7 @@
            :top [[1 1] [1 3] [2] [1 2] [2]]})
 
 (defn show-puzzle [puzzle]
-  (let [view {:left (get puzzle "left") :top (get puzzle "top")}]
+  (let [view {:id (get puzzle "id"):left (get puzzle "left") :top (get puzzle "top")}]
   (nonojure.puzzleview/show view)))
 
 (defn add-thumbnail-listener []
