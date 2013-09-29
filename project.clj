@@ -21,5 +21,4 @@
                 :compiler {:output-dir "resources/public/js/",
                            :output-to "resources/public/js/main.js",
                            :pretty-print true,
-                           :optimizations :whitespace}}]})
-
+                           :optimizations :simple}}]})
