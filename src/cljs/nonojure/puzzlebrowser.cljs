@@ -56,6 +56,7 @@
         rating (get nono "rating")
         puzzle-id (get nono "id")]
     [:div.thumbnail
+     {:data-id puzzle-id}
      [:div.canvas-holder-outer
       [:div.canvas-holder-inner
        [:canvas {:width (* (inc width) cell-size)
@@ -132,7 +133,21 @@
           (reload-thumbnails )))))
   filter-div)
 
+(defn show-puzzle [puzzle]
+  (log (clj->js puzzle)))
+
+(defn add-thumbnail-listener []
+  (dommy/listen! [@root :.thumbnail] :click
+    (fn [event]
+      (let [thumb (.-selectedTarget event)
+            id (dommy/attr thumb :data-id)
+            url (str "/api/nonograms/" id)]
+        (ajax url {:success #(show-puzzle (js->clj %))
+                   :error #(do (log "Error loading puzzle")
+                               (log %))})))))
+
 (defn ^:export init []
   (reset! root (sel1 :#browser))
   (dommy/append! @root (add-filtering-listener (filtering)))
+  (add-thumbnail-listener)
   (reload-thumbnails))
