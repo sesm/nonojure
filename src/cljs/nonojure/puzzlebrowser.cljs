@@ -131,8 +131,12 @@
           (reload-thumbnails )))))
   filter-div)
 
+(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
+           :top [[1 1] [1 3] [2] [1 2] [2]]})
+
 (defn show-puzzle [puzzle]
-  (log (clj->js puzzle)))
+  (let [view {:left (get puzzle "left") :top (get puzzle "top")}]
+  (nonojure.puzzleview/show view)))
 
 (defn add-thumbnail-listener []
   (dommy/listen! [@root :.thumbnail] :click
