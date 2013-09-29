@@ -8,10 +8,16 @@
 .thumbnail {
     text-align: center;
     display: inline-block;
-    width: 250px;
-    height: 250px;
+    width: 230px;
+    height: 230px;
+    margin: 20px;
     float: left;
     position: relative;
+}
+
+.thumbnail:hover {
+    background-color: #EEE;
+    cursor: pointer;
 }
 
 .canvas-holder-inner {
@@ -27,7 +33,7 @@
 
 .description {
     height: 20px;
-    bottom: 10px;
+    bottom: 20px;
     position: relative;
 }
 
