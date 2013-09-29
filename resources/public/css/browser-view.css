@@ -1,3 +1,7 @@
+body {
+    overflow-y: scroll;
+}
+
 #browser {
     text-align: center;
     margin-left: auto;
@@ -10,7 +14,7 @@
     display: inline-block;
     width: 230px;
     height: 230px;
-    margin: 20px;
+    margin: 10px;
     float: left;
     position: relative;
 }
