@@ -18,7 +18,7 @@
   :aot [nonojure.runner]
   :cljsbuild {:builds
               [{:source-paths ["src/cljs"],
-                :compiler {:output-dir "resources/public/js/",
-                           :output-to "resources/public/js/main.js",
+                :compiler {:output-to "resources/public/js/main.js",
                            :pretty-print true,
-                           :optimizations :simple}}]})
+                           :optimizations :whitespace
+                           :print-input-delimeter true}}]})
