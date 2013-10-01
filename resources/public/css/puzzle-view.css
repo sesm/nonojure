@@ -60,7 +60,7 @@ table {
     margin-left: auto;
 }
 
-#puzzle-table td {
+table td {
     border:1px solid black;
     width: 14px;
     height: 14px;
