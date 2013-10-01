@@ -60,13 +60,25 @@ table {
     margin-left: auto;
 }
 
-table td {
+#puzzle-table td {
     border:1px solid black;
     width: 14px;
     height: 14px;
     overflow: hidden;
     display: inline-block;
     white-space: nowrap;
+
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+
+    /*
+      Introduced in IE 10.
+      See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
+      */
+    -ms-user-select: none;
+    user-select: none;
+
 }
 
 #puzzle-view {

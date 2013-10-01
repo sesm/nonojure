@@ -1,7 +1,7 @@
 (ns nonojure.puzzleview
   (:require
    [dommy.utils :as utils]
-   [dommy.core :as dommy]
+   [dommy.core :as dommy :refer [listen!]]
    [jayq.util :refer [log]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]))
@@ -18,10 +18,7 @@
 ;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
-(def state (atom {:clicking :none})) ;one of [:none :left :right]
-
-(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
-           :top [[1 1] [1 3] [2] [1 2] [2]]})
+(def current-fill-style (atom nil)) ;one of [:empty :crossed :filled nil]
 
 (defn pad [nums beg end value]
   (-> []
@@ -131,24 +128,6 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
       (into (update-last rows add-class-templ " thick-bottom"))
       (into bottom))))
 
-(defn cell-click [evt node]
-  "Change the color when cell is clicked"
-  (case (.-which evt)
-    1 (do (dommy/toggle-class! node "cell-clicked")
-          (dommy/remove-class! node "cell-rightclicked")
-          (swap! state assoc :clicking :left))
-    3 (do (dommy/toggle-class! node "cell-rightclicked")
-          (dommy/remove-class! node "cell-clicked")
-          (swap! state assoc :clicking :right))
-    nil))
-
-(defn num-click [evt node]
-  (let [td (.-currentTarget evt)
-        coord (dommy/attr td :data-coord)
-        query (str "td[data-coord*='" coord "']")]
-    (doseq [el (sel query)]
-      (dommy/toggle-class! el "num-clicked"))))
-
 (defn extract-solution []
   "Extracts solution from the page"
   (let [rows (sel ".row")
@@ -228,25 +207,69 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
           el (sel (str "." class))]
     (dommy/remove-class! el class)))
 
+(defn change-cell-style! [cell style]
+  (case style
+    :filled (do (dommy/add-class! cell "cell-clicked")
+                (dommy/remove-class! cell "cell-rightclicked"))
+    :crossed (do (dommy/add-class! cell "cell-rightclicked")
+                 (dommy/remove-class! cell "cell-clicked"))
+    :empty (do (dommy/remove-class! cell "cell-clicked")
+               (dommy/remove-class! cell "cell-rightclicked"))))
+
+(defn cell-style [cell]
+  (cond (dommy/has-class? cell "cell-clicked") :filled
+        (dommy/has-class? cell "cell-rightclicked") :crossed
+        :default :empty))
+
+(defn new-cell-style-after-click [cell button]
+  (case [(cell-style cell) button]
+    [:filled :left] :empty
+    [:filled :right] :crossed
+    [:crossed :left] :filled
+    [:crossed :right] :empty
+    [:empty :left] :filled
+    [:empty :right] :crossed))
+
+(defn button [evt]
+  (case (.-button evt)
+    0 :left
+    1 :middle
+    2 :right
+    :unknown))
+
+(defn handle-mouse-down-on-cell [evt]
+  (let [cell (.-target evt)
+        style (new-cell-style-after-click cell (button evt))]
+    (reset! current-fill-style style)
+    (change-cell-style! cell style)))
+
+(defn handle-mouse-enter-on-cell [evt]
+  (when-let [style @current-fill-style]
+    (change-cell-style! (.-target evt) style)))
+
+(defn disable-context-menu [evt]
+  (.preventDefault evt)
+  false)
+
+(defn handle-number-click [evt]
+  (let [cell (.-target evt)
+        coord (dommy/attr cell :data-coord)
+        query (str "td[data-coord*='" coord "']")]
+    (doseq [el (sel query)]
+      (dommy/toggle-class! el "num-clicked"))))
+
+
 (defn add-handlers []
-  (let [cells (sel ".cell")
-        nums (sel ".num")]
-      (doseq [cell cells]
-        (set! (.-onmousedown cell) #(do (cell-click % cell) false))
-        (set! (.-oncontextmenu cell) (fn [evt] false))
-        (set! (.-onmousemove cell) (fn [evt]
-                                     (let [t (.-currentTarget evt)
-                                           s (:clicking @state)]
-                                       (if (and (= s :left) (not (dommy/has-class? t "cell-clicked")))
-                                         ((.-onmousedown cell) evt)
-                                         (if (and (= s :right) (not (dommy/has-class? t "cell-rightclicked")))
-                                           ((.-oncontextmenu cell) evt)
-                                           false))))))
-      (doseq [num nums]
-        (set! (.-onmousedown num) #(num-click % num))
-        (set! (.-oncontextmenu num) (fn [evt] false)))
-      (dommy/listen! (sel1 :#button-done) :click done-handler))
-  (dommy/listen! (sel1 :#button-clear) :click clear-puzzle))
+  (listen! [(sel1 :#puzzle-table) :.cell]
+                 :mousedown handle-mouse-down-on-cell
+                 :contextmenu disable-context-menu
+                 :mouseenter handle-mouse-enter-on-cell
+                 :mouseup #(reset! current-fill-style nil))
+  (listen! (sel1 :#button-done) :click done-handler)
+  (listen! [(sel1 :#puzzle-table) :.num]
+                 :mousedown handle-number-click
+                 :contextmenu disable-context-menu)
+  (listen! (sel1 :#button-clear) :click clear-puzzle))
 
 (defn show [nono]
   (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
