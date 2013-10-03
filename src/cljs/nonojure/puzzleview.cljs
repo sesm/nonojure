@@ -303,15 +303,13 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
             (change-cell-in-board! board x y style)))
       (reset! last-cell [x y]))))
 
-(defn handle-mouse-up-on-cell [evt]
+(defn stop-dragging []
   (when (= :rect @drag-type)
     (when-let [style @current-fill-style]
-     (let [cell (.-target evt)
-           cur-x (attr-int cell :data-x)
-           cur-y (attr-int cell :data-y)]
-       (update-region-of-board! board @base-cell [cur-x cur-y] style))))
+      (update-region-of-board! board @base-cell @last-cell style)))
   (reset! current-fill-style nil)
-  (reset! base-cell nil))
+  (reset! base-cell nil)
+  (reset! last-cell nil))
 
 (defn disable-context-menu [evt]
   (.preventDefault evt)
@@ -328,8 +326,10 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
   (listen! [(sel1 :#puzzle-table) :.cell]
                  :mousedown handle-mouse-down-on-cell
                  :contextmenu disable-context-menu
-                 :mouseenter handle-mouse-enter-on-cell
-                 :mouseup handle-mouse-up-on-cell)
+                 :mouseenter handle-mouse-enter-on-cell)
+  (listen! (sel1 :#puzzle-table)
+           :mouseup stop-dragging
+           :mouseleave stop-dragging)
   (listen! [(sel1 :#puzzle-table) :.num]
                  :mousedown handle-number-click
                  :contextmenu disable-context-menu)
@@ -337,7 +337,7 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
   (listen! (sel1 :#button-clear) :click clear-puzzle))
 
 (defn show [nono]
-  (init-board! board (count (:left nono)) (count (:top nono)))
+  (init-board! board (count (:top nono)) (count (:left nono)))
   (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
   (add-handlers)
   (dommy/remove-class! (sel1 :.puzzle-container) "hidden"))
