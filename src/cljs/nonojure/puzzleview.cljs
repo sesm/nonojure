@@ -1,7 +1,7 @@
 (ns nonojure.puzzleview
   (:require
    [dommy.utils :as utils]
-   [dommy.core :as dommy :refer [listen!]]
+   [dommy.core :as dommy :refer [listen! attr]]
    [jayq.util :refer [log]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]))
@@ -19,6 +19,40 @@
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
 (def current-fill-style (atom nil)) ;one of [:empty :crossed :filled nil]
+
+(def base-cell (atom nil))
+(def last-cell (atom nil))
+
+(def board (atom nil))
+
+(def drag-type (atom :rect)) ; possible values :rect, :by-one
+
+
+(defn range-inc [a b]
+  (range (min a b) (inc (max a b))))
+
+(defn attr-int [cell attribute]
+  (js/parseInt (attr cell attribute) 10))
+
+;;; Board functions
+
+(defn init-board! [board width height]
+  (let [state (->> (repeat width :empty)
+                   vec
+                   (repeat height)
+                   vec)]
+    (reset! board state)))
+
+(defn change-cell-in-board! [board x y new-state]
+  (swap! board assoc-in [y x] new-state))
+
+(defn update-region-of-board! [board [from-x from-y] [to-x to-y] new-state]
+  (let [cells-to-change (for [x (range-inc from-x to-x)
+                              y (range-inc from-y to-y)]
+                          [y x])
+        new-board (reduce #(assoc-in %1 %2 new-state) @board cells-to-change)]
+    (reset! board new-board)))
+
 
 (defn pad [nums beg end value]
   (-> []
@@ -56,7 +90,9 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
          num-tds-left (pad num-tds pad-length 0 [:td.nothing])
          num-tds-right(pad num-tds 0 pad-length [:td.nothing])
          cells (for [c (range row-length)]
-                 [:td {:class (str "cell c" c " r" row-num)}])]
+                 [:td {:class (str "cell c" c " r" row-num)
+                       :data-x c
+                       :data-y row-num}])]
     (-> [(keyword (str "tr.row.row" row-num)) {:class ""}]
       (into num-tds-left)
       (into (add-thick-class cells))
@@ -150,7 +186,7 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
 
 (defn check-solution []
   "Returns true if current state of puzzle is a valid solution, false otherwise"
-  (let [problem (cljs.reader/read-string (dommy/attr (sel1 :#puzzle-table) "problem-def"))
+  (let [problem (cljs.reader/read-string (attr (sel1 :#puzzle-table) "problem-def"))
         hor-prob (get problem :left)
         ver-prob (get problem :top)
         hor-size (count ver-prob)
@@ -195,7 +231,7 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
   (let [wrong (check-solution)
         rows-wrong (get wrong :rows-wrong)
         cols-wrong (get wrong :cols-wrong)
-        problem-def (dommy/attr (sel1 :#puzzle-table) "problem-def")
+        problem-def (attr (sel1 :#puzzle-table) "problem-def")
         server-id (get problem-def :id)]
     (if (and (empty? rows-wrong)
              (empty? cols-wrong))
@@ -215,6 +251,12 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
                  (dommy/remove-class! cell "cell-clicked"))
     :empty (do (dommy/remove-class! cell "cell-clicked")
                (dommy/remove-class! cell "cell-rightclicked"))))
+
+(defn update-cells-region-style! [[from-x from-y] [to-x to-y] style-fn]
+  (doseq [x (range-inc from-x to-x)
+          y (range-inc from-y to-y)
+          :let [cell (sel1 (str ".r" y ".c" x))]]
+        (change-cell-style! cell (style-fn x y))))
 
 (defn cell-style [cell]
   (cond (dommy/has-class? cell "cell-clicked") :filled
@@ -239,13 +281,37 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
 
 (defn handle-mouse-down-on-cell [evt]
   (let [cell (.-target evt)
-        style (new-cell-style-after-click cell (button evt))]
+        style (new-cell-style-after-click cell (button evt))
+        x (attr-int cell :data-x)
+        y (attr-int cell :data-y)]
     (reset! current-fill-style style)
-    (change-cell-style! cell style)))
+    (change-cell-style! cell style)
+    (change-cell-in-board! board x y style)
+    (reset! base-cell [x y])
+    (reset! last-cell [x y])))
 
 (defn handle-mouse-enter-on-cell [evt]
   (when-let [style @current-fill-style]
-    (change-cell-style! (.-target evt) style)))
+    (let [cell (.-target evt)
+          x (attr-int cell :data-x)
+          y (attr-int cell :data-y)
+          state @board]
+      (if (= @drag-type :rect)
+        (do (update-cells-region-style! @base-cell @last-cell (fn [x y] (get-in state [y x])))
+            (update-cells-region-style! @base-cell [x y] (fn [_ _] style)))
+        (do (change-cell-style! cell style)
+            (change-cell-in-board! board x y style)))
+      (reset! last-cell [x y]))))
+
+(defn handle-mouse-up-on-cell [evt]
+  (when (= :rect @drag-type)
+    (when-let [style @current-fill-style]
+     (let [cell (.-target evt)
+           cur-x (attr-int cell :data-x)
+           cur-y (attr-int cell :data-y)]
+       (update-region-of-board! board @base-cell [cur-x cur-y] style))))
+  (reset! current-fill-style nil)
+  (reset! base-cell nil))
 
 (defn disable-context-menu [evt]
   (.preventDefault evt)
@@ -253,25 +319,25 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
 
 (defn handle-number-click [evt]
   (let [cell (.-target evt)
-        coord (dommy/attr cell :data-coord)
+        coord (attr cell :data-coord)
         query (str "td[data-coord*='" coord "']")]
     (doseq [el (sel query)]
       (dommy/toggle-class! el "num-clicked"))))
-
 
 (defn add-handlers []
   (listen! [(sel1 :#puzzle-table) :.cell]
                  :mousedown handle-mouse-down-on-cell
                  :contextmenu disable-context-menu
                  :mouseenter handle-mouse-enter-on-cell
-                 :mouseup #(reset! current-fill-style nil))
-  (listen! (sel1 :#button-done) :click done-handler)
+                 :mouseup handle-mouse-up-on-cell)
   (listen! [(sel1 :#puzzle-table) :.num]
                  :mousedown handle-number-click
                  :contextmenu disable-context-menu)
+  (listen! (sel1 :#button-done) :click done-handler)
   (listen! (sel1 :#button-clear) :click clear-puzzle))
 
 (defn show [nono]
+  (init-board! board (count (:left nono)) (count (:top nono)))
   (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
   (add-handlers)
   (dommy/remove-class! (sel1 :.puzzle-container) "hidden"))
@@ -279,5 +345,5 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
 (defn ^:export init []
   (when (and js/document
              (aget js/document "getElementById"))
-    (dommy/prepend! (sel1 :#puzzle-view) (create-template (nonojure.random/generate-puzzle 8 10)))
-    (add-handlers)))
+    (dommy/prepend! (sel1 :#puzzle-view) (node [:div#puzzle-table]))
+    (show (nonojure.random/generate-puzzle 8 10))))
