@@ -38,8 +38,7 @@
            {:status 500}))))
 
 (defroutes app-routes
-  (GET "/" [] (file-response "resources/landing.html"))
-  (GET "/browse" [] (file-response "resources/browse.html"))
+  (GET "/" [] (file-response "resources/index.html"))
   (GET "/api-examples" [] (file-response "resources/api-examples.html"))
   (GET "/rating" [] (file-response "resources/rating.html"))
   (context "/api" [] (-> api
