@@ -239,6 +239,8 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
       (js/alert (str "There are errors in rows:" rows-wrong "and columns:" cols-wrong)))))
 
 (defn clear-puzzle []
+  (when-let [state @board]
+    (init-board! board (count (first state)) (count state)))
   (doseq [class ["num-clicked" "cell-clicked" "cell-rightclicked"]
           el (sel (str "." class))]
     (dommy/remove-class! el class)))
