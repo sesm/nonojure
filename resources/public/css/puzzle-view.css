@@ -106,18 +106,6 @@ table td {
     background-size: 25px 25px;
 }
 
-body {
-    background: #f0f9ff; /* Old browsers */
-    background: -moz-linear-gradient(top,  #f0f9ff 0%, #cbebff 47%, #a1dbff 100%); /* FF3.6+ */
-    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f0f9ff), color-stop(47%,#cbebff), color-stop(100%,#a1dbff)); /* Chrome,Safari4+ */
-    background: -webkit-linear-gradient(top,  #f0f9ff 0%,#cbebff 47%,#a1dbff 100%); /* Chrome10+,Safari5.1+ */
-    background: -o-linear-gradient(top,  #f0f9ff 0%,#cbebff 47%,#a1dbff 100%); /* Opera 11.10+ */
-    background: -ms-linear-gradient(top,  #f0f9ff 0%,#cbebff 47%,#a1dbff 100%); /* IE10+ */
-    background: linear-gradient(to bottom,  #f0f9ff 0%,#cbebff 47%,#a1dbff 100%); /* W3C */
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f0f9ff', endColorstr='#a1dbff',GradientType=0 ); /* IE6-9 */
-    margin: 0;
-}
-
 .button-container {
     margin-top: 10px;
     padding: 10px;
@@ -156,31 +144,9 @@ input[type=button], input[type=text]
 }
 
 
-.minitext {
-    position: relative;
-    top: -40px;
-    left: 180px;
-    font-size: 14px;
-}
-
-.header {
-    text-transform: uppercase;
-    text-shadow: -1px 2px 2px black;
-    font-size: 2.7em;
-    line-height: 1.2em;
-    font-weight: bold;
-}
 
 .hide {
     visibility: hidden;
-}
-
-.head-div {
-    position: relative;
-    width: 200px;
-    margin-left: auto;
-    margin-right: auto;
-    
 }
 
 .thick-top {
@@ -219,7 +185,7 @@ td.hide.has-left {
     padding-left: 5px;
 }
 
-footer.first td.hide {
+.footer.first td.hide {
     border-top: 1px solid black;
     padding-top: 5px;
 }
