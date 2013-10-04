@@ -1,13 +1,12 @@
 (ns nonojure.puzzlebrowser
   (:require
-   [dommy.utils :as utils]
    [dommy.core :as dommy]
    [jayq.core :refer [ajax]]
    [jayq.util :refer [log]]
    [monet.canvas :as c]
    [clojure.string :refer [join]])
   (:use-macros
-   [dommy.macros :only [node sel sel1 deftemplate]]))
+   [dommy.macros :only [sel sel1 deftemplate]]))
 
 (declare retrieve-thumbnails)
 
@@ -19,16 +18,6 @@
                    1 "easy"
                    2 "medium"
                    3 "hard"})
-
-(defn ^:export browse []
-  (let [min-size (js/parseInt (.-value (sel1 :#minSize)))
-        max-size (js/parseInt (.-value (sel1 :#maxSize)))
-        order (->> (sel ".order")
-                   (filter #(.-checked %))
-                   first
-                   .-value)]
-    (dommy/remove! (sel1 :table))
-    (retrieve-thumbnails {:min-size min-size :max-size max-size :order order})))
 
 (def cell-size 6)
 
@@ -136,11 +125,10 @@
           (reload-thumbnails )))))
   filter-div)
 
-(def data {:left [[3 1] [3] [2] [1 1] [1 1]]
-           :top [[1 1] [1 3] [2] [1 2] [2]]})
-
 (defn show-puzzle [puzzle]
-  (let [view {:id (get puzzle "id"):left (get puzzle "left") :top (get puzzle "top")}]
+  (let [view {:id (get puzzle "id")
+              :left (get puzzle "left")
+              :top (get puzzle "top")}]
   (nonojure.puzzleview/show view)))
 
 (defn add-thumbnail-listener []
@@ -154,8 +142,8 @@
                    :error #(do (log "Error loading puzzle")
                                (log %))})))))
 
-(defn ^:export init []
-  (reset! root (sel1 :#browser))
+(defn ^:export init [el]
+  (reset! root el)
   (dommy/append! @root (add-filtering-listener (filtering)))
   (add-thumbnail-listener)
   (reload-thumbnails))

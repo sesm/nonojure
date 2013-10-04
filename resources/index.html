@@ -2,41 +2,26 @@
 <html>
   <head>
     <title>Nonojure</title>
-    <link rel="stylesheet" media="screen" href="http://openfontlibrary.org/face/toscuchet-cm" rel="stylesheet" type="text/css"/> 
+    <link rel="stylesheet" media="screen" href="http://openfontlibrary.org/face/toscuchet-cm" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/puzzle-view.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/browser-view.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/common.css"/>
-
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/js/main.js" ></script>
   </head>
   <body>
     <div class="head-div">
       <p class="header">Nonojure</p>
     </div>
-    <div id="navigation">
-      <div id="browser-tab-button" class="tab-button">browse</div>
-      <div id="current-game-tab-button" class="tab-button">current</div>
-    </div>
-    <div id="all-container" >
-      <div class="puzzle-container">
-        <div class="puzzle center ">
-          <p class="random-puzzles">All puzzles are random now</p>
-          <div id="puzzle-view" ></div>
-          <div class="button-container">
-            <form >
-              <input type="button" id="button-done" value="Done!"/>
-              <input type="button" id="button-clear" value="Clear"/>
-            </form>
-          </div>
-        </div>
-
-      </div>
-      <div class="browser-container">
-        <div id="browser"></div>
-      </div>
-    </div>
+    <div id="navigation"></div>
+    <div id="views"></div>
   </body>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-  <script type="text/javascript" src="/static/js/main.js" ></script>
-  <script>nonojure.puzzleview.init()</script>
-  <script>nonojure.puzzlebrowser.init()</script>
+  <script>
+    $(function() {
+    nonojure.navigation.init();
+    nonojure.puzzleview.init($("#puzzle")[0]);
+    nonojure.puzzlebrowser.init($("#browser")[0]);
+    nonojure.connect.connect();
+    });
+  </script>
 </html>

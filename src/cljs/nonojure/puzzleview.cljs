@@ -1,7 +1,8 @@
 (ns nonojure.puzzleview
   (:require
+   [nonojure.navigation :refer [show-view]]
    [dommy.utils :as utils]
-   [dommy.core :as dommy :refer [listen! attr]]
+   [dommy.core :as dommy :refer [listen! attr append!]]
    [jayq.util :refer [log]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]))
@@ -339,10 +340,15 @@
   (init-board! board (count (:top nono)) (count (:left nono)))
   (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
   (add-handlers)
-  (dommy/remove-class! (sel1 :.puzzle-container) "hidden"))
+  (show-view :puzzle))
 
-(defn ^:export init []
-  (when (and js/document
-             (aget js/document "getElementById"))
-    (dommy/prepend! (sel1 :#puzzle-view) (node [:div#puzzle-table]))
-    (show (nonojure.random/generate-puzzle 8 10))))
+(defn ^:export init [el]
+  (dommy/add-class! el "center")
+  (append! el [:div#puzzle-view.center [:div#puzzle-table]])
+  (append! el [:div.button-container
+               [:form
+                [:input#button-done {:type "button"
+                                     :value "Done!"}]
+                [:input#button-clear {:type "button"
+                                      :value "Clear!"}]]])
+  (show (nonojure.random/generate-puzzle 8 10)))

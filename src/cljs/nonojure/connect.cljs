@@ -1,4 +1,6 @@
-(ns modern-cljs.connect
+(ns nonojure.connect
   (:require [clojure.browser.repl :as repl]))
 
-(repl/connect "http://localhost:9000/repl")
+(defn ^:export connect []
+  (repl/connect "http://localhost:9000/repl"))
+
