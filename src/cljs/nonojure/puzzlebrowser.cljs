@@ -57,13 +57,8 @@
       [:div.canvas-holder-inner
        [:canvas {:width (* (inc width) cell-size)
                  :height (* (inc height) cell-size)}]]]
-
-     #_[:img {:src "/static/img/grid.svg"
-              :width (* scale width)
-              :height (* scale height)}]
-
      [:div.description
-      [:p.size (str width "×" height)]
+      [:p.size.number-text (str width "×" height)]
       [:p.difficulty (difficulties difficulty)]]]))
 
 (defn create-thumbnails [nonos]
@@ -99,20 +94,23 @@
                 :value (dommy/attr selected :data-value)}]
     (retrieve-thumbnails clause)))
 
+
 (deftemplate filtering []
   [:div.filtering
    [:div.size [:p.type "Size"]
-    [:a.all.selected "all"]
+    [:div.item [:a.all.selected "all"]]
     (for [value ["1-10" "11-20" "21-30"]]
-      [:a {:data-filter "size"
-           :data-value value}
-       value])]
+      [:div.item
+       [:a.number-text {:data-filter "size"
+                        :data-value value}
+        value]])]
    [:div.difficulty [:p.type "Difficulty"]
-    [:a.all "all"]
+    [:div.item [:a.all "all"]]
     (for [value [1 2 3]]
-      [:a {:data-filter "difficulty"
-           :data-value (str (- value 0.5) "-" (+ value 0.499))}
-       (difficulties value)])]])
+      [:div.item
+       [:a {:data-filter "difficulty"
+            :data-value (str (- value 0.5) "-" (+ value 0.499))}
+        (difficulties value)]] )]])
 
 (defn add-filtering-listener [filter-div]
   (dommy/listen! [filter-div :a] :click

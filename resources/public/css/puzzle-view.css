@@ -2,7 +2,6 @@
     border-collapse:collapse;
 }
 .puzzle-table-non td, .puzzle-table-non th {
-    padding:5px;
     cursor: pointer;
 }
 
@@ -30,12 +29,27 @@ table {
     margin-left: auto;
 }
 
+.small-cells td {
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+}
+
+.medium-cells td {
+    width: 24px;
+    height: 24px;
+    font-size: 18px;
+}
+
+.large-cells td {
+    width: 32px;
+    height: 32px;
+    font-size: 25px;
+}
+
 table td {
     border:1px solid black;
-    width: 10px;
-    height: 10px;
     overflow: hidden;
-    display: inline-block;
     white-space: nowrap;
 
     -moz-user-select: -moz-none;
@@ -131,26 +145,22 @@ input[type=button], input[type=text]
 }
 
 td.hide {
-    border: 0px;
-    padding: 6px;
+    border: 1px solid white;
 }
 
 :not(.footer).last td.hide {
     border-bottom: 1px solid black;
-    padding-bottom: 5px;
+
 }
 
 td.hide.has-right {
     border-right: 1px solid black;
-    padding-right: 5px;
 }
 
 td.hide.has-left {
     border-left: 1px solid black;
-    padding-left: 5px;
 }
 
 .footer.first td.hide {
     border-top: 1px solid black;
-    padding-top: 5px;
 }

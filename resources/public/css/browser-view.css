@@ -61,33 +61,25 @@ body {
     font-size: 20px;
 }
 
-.filtering a {
+.filtering .item {
     display: inline-block;
+    width: 80px;
     text-align: center;
-    color: #6DA3BD;
-}
-
-.filtering .difficulty a {
-    width: 80px;
-}
-
-.filtering .size a {
-    width: 80px;
-}
-
-.filtering a.all {
-    width: 80px;
 }
 
 .filtering a {
-    text-decoration: underline;
+    color: #888;
     cursor: pointer;
 }
 
+.filtering a:hover {
+    border-bottom: 2px solid #888;
+}
+
 .filtering a.selected {
-    text-decoration: none;
-    color: #666;
-    font-size: 24px;
+    border-bottom: 2px solid black;
+    color: black;
+    font-size: 20px;
     cursor: default;
 }
 

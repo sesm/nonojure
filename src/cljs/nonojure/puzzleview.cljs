@@ -157,9 +157,10 @@
                 (if (zero? (rem r 5))
                   (add-class-templ row " thick-top")
                   row))]
-    (-> [:table#table.puzzle-table-non {:id "puzzle-table"
-                                        :problem-def data
-                                        :data-help "test"}]
+    (-> [:table#table.puzzle-table-non.number-text.medium-cells
+         {:id "puzzle-table"
+          :problem-def data
+          :data-help "test"}]
       (into header)
       (into (update-last rows add-class-templ " thick-bottom"))
       (into bottom))))
