@@ -55,10 +55,9 @@
 
 
 (defn pad [nums beg end value]
-  (-> []
-      (into (repeat beg value))
-      (into nums)
-      (into (repeat end value))))
+  (vec (concat (repeat beg value)
+               nums
+               (repeat end value))))
 
 (defn add-class-templ [el class]
   (update-in el [1 :class] str class))
@@ -69,7 +68,7 @@
 
 (defn add-thick-class
   "Adds thick-left and thick-right classes to every 5th element
-Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
+  Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
   [tds]
   (let [tds (map-indexed
              (fn [ind value]
@@ -170,19 +169,17 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
         row-num (count rows)
         solution (for [r (range row-num)
                        :let [cells (sel (str ".r" r))]]
-                   (->> cells
-                     (map #(if (dommy/has-class? % "cell-clicked") 1 0))
-                     (into [])))]
+                   (mapv #(if (dommy/has-class? % "cell-clicked") 1 0) cells))]
     (vec solution)))
 
 (defn extract-numbers [row]
-  "Given a sequence containing 0s and 1s returns numbers of consequetive ones,
+  "Given a sequence containing 0s and 1s returns numbers of consecutive ones,
   i.e. given [1 0 0 1 1] will return [1 2]"
   (->> row
     (partition-by identity)
     (filter #(= 1 (first %)))
     (map count)
-    (into [])))
+    vec))
 
 (defn check-solution []
   "Returns true if current state of puzzle is a valid solution, false otherwise"
@@ -216,13 +213,13 @@ Basically it add thick-left to 0, 5, 10 element and thick-right to last one."
 
 (defn rate [diff]
   "Submits rating for puzzle id. Assumed to be called from rating dialog.
-  Puzzle ID is implicitely taken from dialog properties"
+  Puzzle ID is implicitly taken from dialog properties"
   (let [args (.-dialogArguments js/window)
         id (.-id args) ]
     (goog.net.XhrIo/send (str "/api/rate/" id "?difficulty=" diff) #(.close js/window))))
 
 (defn rate-dialog [id]
-  "Shows rate dialog for give puzzle id"
+  "Shows rate dialog for given puzzle id"
   (let [d-attrs (js-obj)
         _ (set! (.-id d-attrs) id)]
     (js/showModalDialog "rating" d-attrs "dialogWidth:250; dialogHeight:100; dialogLeft:860; dialogTop: 540; resizable: no")))
