@@ -3,7 +3,7 @@
   :source-paths ["src/clj"]
   :plugins [[lein-cljsbuild "0.3.3"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/clojurescript "0.0-1909"]
+                 [org.clojure/clojurescript "0.0-1913"]
 
                  [com.taoensso/timbre "2.6.1"]
                  [http-kit "2.1.10"]
@@ -21,4 +21,4 @@
                 :compiler {:output-to "resources/public/js/main.js",
                            :pretty-print true,
                            :optimizations :whitespace
-                           :print-input-delimeter true}}]})
+                           :print-input-delimiter true}}]})
