@@ -2,9 +2,11 @@
   (:require
    [dommy.utils :as utils]
    [dommy.core :as dommy :refer [listen! attr]]
-   [jayq.util :refer [log]])
+   [jayq.util :refer [log]]
+   [cljs.core.async :refer [put! <! >! chan]])
   (:use-macros
-   [dommy.macros :only [node sel sel1]]))
+   [dommy.macros :only [node sel sel1]]
+   [cljs.core.async.macros :only [go-loop]]))
 
 ;(def test-data {:left [[] [1 2] [2] [4]]
 ;                :top [[2] [1 1] [3] [2]]})
@@ -20,13 +22,9 @@
 
 (def current-fill-style (atom nil)) ;one of [:empty :crossed :filled nil]
 
-(def base-cell (atom nil))
-(def last-cell (atom nil))
-
 (def board (atom nil))
 
 (def drag-type (atom :rect)) ; possible values :rect, :by-one
-
 
 (defn range-inc [a b]
   (range (min a b) (inc (max a b))))
@@ -52,7 +50,6 @@
                           [y x])
         new-board (reduce #(assoc-in %1 %2 new-state) @board cells-to-change)]
     (reset! board new-board)))
-
 
 (defn pad [nums beg end value]
   (vec (concat (repeat beg value)
@@ -283,32 +280,32 @@
         style (new-cell-style-after-click cell (button evt))
         x (attr-int cell :data-x)
         y (attr-int cell :data-y)]
-    (reset! current-fill-style style)
     (change-cell-style! cell style)
     (change-cell-in-board! board x y style)
-    (reset! base-cell [x y])
-    (reset! last-cell [x y])))
+    {:fill-style style
+     :base-cell [x y]
+     :last-cell [x y]}))
 
-(defn handle-mouse-enter-on-cell [evt]
-  (when-let [style @current-fill-style]
+(defn handle-mouse-enter-on-cell [evt event-state]
+  (when (:fill-style event-state)
     (let [cell (.-target evt)
           x (attr-int cell :data-x)
           y (attr-int cell :data-y)
-          state @board]
+          {:keys [fill-style base-cell last-cell]} event-state]
       (if (= @drag-type :rect)
-        (do (update-cells-region-style! @base-cell @last-cell (fn [x y] (get-in state [y x])))
-            (update-cells-region-style! @base-cell [x y] (fn [_ _] style)))
-        (do (change-cell-style! cell style)
-            (change-cell-in-board! board x y style)))
-      (reset! last-cell [x y]))))
+        (do (update-cells-region-style! base-cell last-cell (fn [x y] (get-in @board [y x])))
+          (update-cells-region-style! base-cell [x y] (fn [_ _] fill-style)))
+        (do (change-cell-style! cell fill-style)
+          (change-cell-in-board! board x y fill-style)))
+      (assoc event-state :last-cell [x y]))))
 
-(defn stop-dragging []
-  (when (= :rect @drag-type)
-    (when-let [style @current-fill-style]
-      (update-region-of-board! board @base-cell @last-cell style)))
-  (reset! current-fill-style nil)
-  (reset! base-cell nil)
-  (reset! last-cell nil))
+(defn stop-dragging [{:keys [fill-style base-cell last-cell]}]
+  (when (and fill-style
+             (= :rect @drag-type))
+    (update-region-of-board! board base-cell last-cell fill-style))
+  {:fill-style nil
+   :base-cell nil
+   :last-cell nil})
 
 (defn disable-context-menu [evt]
   (.preventDefault evt)
@@ -321,25 +318,42 @@
     (doseq [el (sel query)]
       (dommy/toggle-class! el "num-clicked"))))
 
-(defn add-handlers []
-  (listen! [(sel1 :#puzzle-table) :.cell]
-                 :mousedown handle-mouse-down-on-cell
-                 :contextmenu disable-context-menu
-                 :mouseenter handle-mouse-enter-on-cell)
-  (listen! (sel1 :#puzzle-table)
-           :mouseup stop-dragging
-           :mouseleave stop-dragging)
-  (listen! [(sel1 :#puzzle-table) :.num]
-                 :mousedown handle-number-click
-                 :contextmenu disable-context-menu)
-  (listen! (sel1 :#button-done) :click done-handler)
-  (listen! (sel1 :#button-clear) :click clear-puzzle))
+(defn add-handlers [event-chan]
+  (let [add-event (fn [event-type] #(put! event-chan [% event-type]))]
+    (listen! [(sel1 :#puzzle-table) :.cell]
+             :mousedown (add-event :mousedown)
+             :contextmenu disable-context-menu
+             :mouseenter (add-event :mouseenter))
+    (listen! (sel1 :#puzzle-table)
+             :mouseup (add-event :mouseup)
+             :mouseleave (add-event :mouseleave))
+    (listen! [(sel1 :#puzzle-table) :.num]
+             :mousedown handle-number-click
+             :contextmenu disable-context-menu)
+    (listen! (sel1 :#button-done) :click done-handler)
+    (listen! (sel1 :#button-clear) :click clear-puzzle)))
+
+(defn handle-cell-events [event-chan]
+  (go-loop
+   [[evt event-type] (<! event-chan)
+    state {:fill-style nil
+           :base-cell nil
+           :last-cell nil}]
+   (let [new-state (case event-type
+                     :mousedown (handle-mouse-down-on-cell evt)
+                     :contextmenu (disable-context-menu evt)
+                     :mouseenter (handle-mouse-enter-on-cell evt state)
+                     :mouseup (stop-dragging state)
+                     :mouseleave (stop-dragging state))]
+     (recur (<! event-chan) new-state))))
 
 (defn show [nono]
   (init-board! board (count (:top nono)) (count (:left nono)))
   (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
-  (add-handlers)
-  (dommy/remove-class! (sel1 :.puzzle-container) "hidden"))
+  (let [event-chan (chan 5)]
+    (add-handlers event-chan)
+    (dommy/remove-class! (sel1 :.puzzle-container) "hidden")
+    (handle-cell-events event-chan)))
 
 (defn ^:export init []
   (when (and js/document
