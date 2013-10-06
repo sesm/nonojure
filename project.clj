@@ -7,6 +7,7 @@
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-1913"]
+                 [org.clojure/core.async "0.1.242.0-44b1e3-alpha"]
 
                  [com.taoensso/timbre "2.6.1"]
                  [http-kit "2.1.10"]
