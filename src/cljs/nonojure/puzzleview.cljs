@@ -20,12 +20,6 @@
 ;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
 ;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
-(def current-fill-style (atom nil)) ;one of [:empty :crossed :filled nil]
-
-(def board (atom nil))
-
-(def drag-type (atom :rect)) ; possible values :rect, :by-one
-
 (defn range-inc [a b]
   (range (min a b) (inc (max a b))))
 
@@ -34,22 +28,21 @@
 
 ;;; Board functions
 
-(defn init-board! [board width height]
-  (let [state (->> (repeat width :empty)
-                   vec
-                   (repeat height)
-                   vec)]
-    (reset! board state)))
+(defn init-board [width height]
+  (->> (repeat width :empty)
+       vec
+       (repeat height)
+       vec))
 
-(defn change-cell-in-board! [board x y new-state]
-  (swap! board assoc-in [y x] new-state))
+(defn change-cell-in-board [board x y new-state]
+  (assoc-in board [y x] new-state))
 
-(defn update-region-of-board! [board [from-x from-y] [to-x to-y] new-state]
+(defn update-region-of-board [board [from-x from-y] [to-x to-y] new-state]
   (let [cells-to-change (for [x (range-inc from-x to-x)
                               y (range-inc from-y to-y)]
                           [y x])
-        new-board (reduce #(assoc-in %1 %2 new-state) @board cells-to-change)]
-    (reset! board new-board)))
+        new-board (reduce #(assoc-in %1 %2 new-state) board cells-to-change)]
+    new-board))
 
 (defn pad [nums beg end value]
   (vec (concat (repeat beg value)
@@ -226,15 +219,15 @@
         rows-wrong (get wrong :rows-wrong)
         cols-wrong (get wrong :cols-wrong)
         problem-def (attr (sel1 :#puzzle-table) "problem-def")
-        server-id (get problem-def :id)]
-    (if (and (empty? rows-wrong)
-             (empty? cols-wrong))
+        server-id (get problem-def :id)
+        done (and (empty? rows-wrong)
+                  (empty? cols-wrong))]
+    (if done
       (rate-dialog server-id)
-      (js/alert (str "There are errors in rows:" rows-wrong "and columns:" cols-wrong)))))
+      (js/alert (str "There are errors in rows:" rows-wrong "and columns:" cols-wrong)))
+    done))
 
 (defn clear-puzzle []
-  (when-let [state @board]
-    (init-board! board (count (first state)) (count state)))
   (doseq [class ["num-clicked" "cell-clicked" "cell-rightclicked"]
           el (sel (str "." class))]
     (dommy/remove-class! el class)))
@@ -275,37 +268,41 @@
     2 :right
     :unknown))
 
-(defn handle-mouse-down-on-cell [evt]
+(defn handle-mouse-down-on-cell [evt state]
   (let [cell (.-target evt)
         style (new-cell-style-after-click cell (button evt))
         x (attr-int cell :data-x)
         y (attr-int cell :data-y)]
     (change-cell-style! cell style)
-    (change-cell-in-board! board x y style)
-    {:fill-style style
-     :base-cell [x y]
-     :last-cell [x y]}))
+    (assoc state
+      :fill-style style
+      :base-cell [x y]
+      :last-cell [x y]
+      :board (change-cell-in-board (:board state) x y style))))
 
-(defn handle-mouse-enter-on-cell [evt event-state]
-  (when (:fill-style event-state)
+(defn handle-mouse-enter-on-cell [evt state]
+  (if-not (:fill-style state)
+    state
     (let [cell (.-target evt)
           x (attr-int cell :data-x)
           y (attr-int cell :data-y)
-          {:keys [fill-style base-cell last-cell]} event-state]
-      (if (= @drag-type :rect)
-        (do (update-cells-region-style! base-cell last-cell (fn [x y] (get-in @board [y x])))
-          (update-cells-region-style! base-cell [x y] (fn [_ _] fill-style)))
-        (do (change-cell-style! cell fill-style)
-          (change-cell-in-board! board x y fill-style)))
-      (assoc event-state :last-cell [x y]))))
+          {:keys [fill-style base-cell last-cell drag-type]} state]
+      (if (= :rect drag-type)
+        (do
+          (update-cells-region-style! base-cell last-cell (fn [x y] (get-in state [:board y x])))
+          (update-cells-region-style! base-cell [x y] (constantly fill-style))
+          (assoc state :last-cell [x y]))
+        (do
+          (change-cell-style! cell fill-style)
+          (assoc state
+            :last-cell [x y]
+            :board (change-cell-in-board (:board state) x y fill-style)))))))
 
-(defn stop-dragging [{:keys [fill-style base-cell last-cell]}]
-  (when (and fill-style
-             (= :rect @drag-type))
-    (update-region-of-board! board base-cell last-cell fill-style))
-  {:fill-style nil
-   :base-cell nil
-   :last-cell nil})
+(defn stop-dragging [initial-state {:keys [fill-style base-cell last-cell board drag-type]}]
+  (assoc initial-state :board
+    (if (and fill-style (= :rect drag-type))
+      (update-region-of-board board base-cell last-cell fill-style)
+      board)))
 
 (defn disable-context-menu [evt]
   (.preventDefault evt)
@@ -328,32 +325,38 @@
              :mouseup (add-event :mouseup)
              :mouseleave (add-event :mouseleave))
     (listen! [(sel1 :#puzzle-table) :.num]
-             :mousedown handle-number-click
+             :mousedown (add-event :number-click)
              :contextmenu disable-context-menu)
-    (listen! (sel1 :#button-done) :click done-handler)
-    (listen! (sel1 :#button-clear) :click clear-puzzle)))
+    (listen! (sel1 :#button-done) :click (add-event :done))
+    (listen! (sel1 :#button-clear) :click (add-event :clear))))
 
-(defn handle-cell-events [event-chan]
+(defn handle-cell-events [event-chan initial-state]
   (go-loop
    [[evt event-type] (<! event-chan)
-    state {:fill-style nil
-           :base-cell nil
-           :last-cell nil}]
+    state initial-state]
    (let [new-state (case event-type
-                     :mousedown (handle-mouse-down-on-cell evt)
+                     :mousedown (handle-mouse-down-on-cell evt state)
                      :contextmenu (disable-context-menu evt)
                      :mouseenter (handle-mouse-enter-on-cell evt state)
-                     :mouseup (stop-dragging state)
-                     :mouseleave (stop-dragging state))]
+                     :mouseup (stop-dragging initial-state state)
+                     :mouseleave (stop-dragging initial-state state)
+                     :number-click (handle-number-click evt)
+                     :done (if (done-handler evt) initial-state state)
+                     :clear (do (clear-puzzle) initial-state)
+                     (do (log (str "Unknown event: " event-type)) state))]
      (recur (<! event-chan) new-state))))
 
 (defn show [nono]
-  (init-board! board (count (:top nono)) (count (:left nono)))
   (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
   (let [event-chan (chan 5)]
     (add-handlers event-chan)
     (dommy/remove-class! (sel1 :.puzzle-container) "hidden")
-    (handle-cell-events event-chan)))
+    (handle-cell-events event-chan
+                        {:fill-style nil
+                         :base-cell nil
+                         :last-cell nil
+                         :drag-type :rect
+                         :board (init-board (count (:top nono)) (count (:left nono)))})))
 
 (defn ^:export init []
   (when (and js/document
