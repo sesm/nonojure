@@ -1,7 +1,8 @@
 (defproject nonojure "0.0.1-SNAPSHOT"
   :description "Nonogram puzzles"
   :source-paths ["src/clj"]
-  :plugins [[lein-cljsbuild "0.3.3"]]
+  :plugins [[lein-cljsbuild "0.3.3"]
+            [org.clojars.nbeloglazov/lein-garden "0.1.0-SNAPSHOT"]]
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-1913"]
 
@@ -21,4 +22,7 @@
                 :compiler {:output-to "resources/public/js/main.js",
                            :pretty-print true,
                            :optimizations :whitespace
-                           :print-input-delimiter true}}]})
+                           :print-input-delimiter true}}]}
+
+  :garden {:source-path "src/garden"
+           :output-path "resources/public/css"})

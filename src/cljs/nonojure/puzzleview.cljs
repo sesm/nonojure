@@ -171,7 +171,7 @@
         row-num (count rows)
         solution (for [r (range row-num)
                        :let [cells (sel (str ".r" r))]]
-                   (mapv #(if (dommy/has-class? % "cell-clicked") 1 0) cells))]
+                   (mapv #(if (dommy/has-class? % "crossed") 1 0) cells))]
     (vec solution)))
 
 (defn extract-numbers [row]
@@ -240,18 +240,18 @@
 (defn clear-puzzle []
   (when-let [state @board]
     (init-board! board (count (first state)) (count state)))
-  (doseq [class ["num-clicked" "cell-clicked" "cell-rightclicked"]
+  (doseq [class ["num-clicked" "filled" "crossed"]
           el (sel (str "." class))]
     (dommy/remove-class! el class)))
 
 (defn change-cell-style! [cell style]
   (case style
-    :filled (do (dommy/add-class! cell "cell-clicked")
-                (dommy/remove-class! cell "cell-rightclicked"))
-    :crossed (do (dommy/add-class! cell "cell-rightclicked")
-                 (dommy/remove-class! cell "cell-clicked"))
-    :empty (do (dommy/remove-class! cell "cell-clicked")
-               (dommy/remove-class! cell "cell-rightclicked"))))
+    :filled (do (dommy/add-class! cell "filled")
+                (dommy/remove-class! cell "crossed"))
+    :crossed (do (dommy/add-class! cell "crossed")
+                 (dommy/remove-class! cell "filled"))
+    :empty (do (dommy/remove-class! cell "filled")
+               (dommy/remove-class! cell "crossed"))))
 
 (defn update-cells-region-style! [[from-x from-y] [to-x to-y] style-fn]
   (doseq [x (range-inc from-x to-x)
@@ -260,8 +260,8 @@
         (change-cell-style! cell (style-fn x y))))
 
 (defn cell-style [cell]
-  (cond (dommy/has-class? cell "cell-clicked") :filled
-        (dommy/has-class? cell "cell-rightclicked") :crossed
+  (cond (dommy/has-class? cell "filled") :filled
+        (dommy/has-class? cell "crossed") :crossed
         :default :empty))
 
 (defn new-cell-style-after-click [cell button]
