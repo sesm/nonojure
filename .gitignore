@@ -3,3 +3,4 @@ resources/public/js/main.js
 resources/public/css
 .lein-repl-history
 .nrepl-port
+/config.clj

@@ -8,11 +8,11 @@
    [org.httpkit.server :as httpkit]
    [ring.util.response :refer [file-response]]
    [cheshire.core :as json]
-   [nonojure.db :as db]
+   [nonojure
+    [db :as db]
+    [config :refer [config]]]
    [taoensso.timbre :as timbre
     :refer (trace debug info warn error fatal spy with-log-level)]))
-
-(def config {:port 3000})
 
 (defn- parse-filter-value [value]
   (if value
@@ -59,8 +59,8 @@
 
 (defn start []
   (db/connect)
-  (let [stop (httpkit/run-server app config)]
-    (info (str "Started server on port " (:port config)))
+  (let [stop (httpkit/run-server app (:web config))]
+    (info (str "Started server on port " (get-in config [:web :port])))
     stop))
 
 

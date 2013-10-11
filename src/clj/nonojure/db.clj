@@ -4,15 +4,19 @@
              [collection :as mc]
              [query :as mq]
              [operators :refer [$gte $lte $or]]]
-            [nonojure.random :refer [generate-puzzle]]
+            [nonojure
+             [random :refer [generate-puzzle]]]
             [taoensso.timbre :refer [error warn]])
   (:import [org.bson.types ObjectId]))
 
 (def nono-coll "nonograms")
+(def db-name "nonojure")
 
-(defn connect []
-  (try (mg/connect!)
-       (mg/set-db! (mg/get-db "nonojure"))
+(defn connect [config]
+  (try (mg/connect! (:mongo config {}))
+       (when-let [username (get-in config [:mongo :username])]
+         (assert (mg/authenticate (mg/get-db db-name) username (.toCharArray (get-in config [:mongo :password])))))
+       (mg/use-db! db-name)
        (catch Exception e
          (error (str "Couldn't connect to mongo " e)))))
 
@@ -88,6 +92,18 @@
    (mc/remove nono-coll)
 
    (fill-db-with-random-puzzles)
+
+   (defn import-puzzles [file]
+     (connect nonojure.config/config)
+     (load-file file)
+     (assert (every? (resolve 'check) @(resolve 'puzzles)))
+     (doseq [puzzle @(resolve 'puzzles)]
+       (println "Inserting")
+       (insert-nonogram puzzle)
+       ))
+
+
+   (import-puzzles "../nonojure-image/puzzles.cljs")
 
    )
 
