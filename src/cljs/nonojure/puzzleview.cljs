@@ -318,6 +318,11 @@
       (update-region-of-board board base-cell last-cell fill-style)
       board)))
 
+(defn cancel-dragging [initial-state {:keys [fill-style base-cell last-cell board]}]
+  (when fill-style
+    (update-cells-region-style! base-cell last-cell (fn [x y] (get-in board [y x]))))
+  (assoc initial-state :board board))
+
 (defn disable-context-menu [evt]
   (.preventDefault evt)
   false)
@@ -354,7 +359,7 @@
                      :mousedown-cell (handle-mouse-down-on-cell evt state)
                      :mouseenter-cell (handle-mouse-enter-on-cell evt state)
                      :mouseup-cell (stop-dragging initial-state state)
-                     :mouseleave-board (stop-dragging initial-state state)
+                     :mouseleave-board (cancel-dragging initial-state state)
                      :number-click (handle-number-click evt)
                      :done (if (done-handler evt) initial-state state)
                      :clear (do (clear-puzzle) initial-state)
