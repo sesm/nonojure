@@ -13,9 +13,9 @@
 (def db-name "nonojure")
 
 (defn connect [config]
-  (try (mg/connect! (:mongo config {}))
-       (when-let [username (get-in config [:mongo :username])]
-         (assert (mg/authenticate (mg/get-db db-name) username (.toCharArray (get-in config [:mongo :password])))))
+  (try (mg/connect! config)
+       (when-let [username (:username config)]
+         (assert (mg/authenticate (mg/get-db db-name) username (.toCharArray (:password config)))))
        (mg/use-db! db-name)
        (catch Exception e
          (error (str "Couldn't connect to mongo " e)))))
@@ -94,7 +94,7 @@
    (fill-db-with-random-puzzles)
 
    (defn import-puzzles [file]
-     (connect nonojure.config/config)
+     (connect (:mongo nonojure.config/config))
      (load-file file)
      (assert (every? (resolve 'check) @(resolve 'puzzles)))
      (doseq [puzzle @(resolve 'puzzles)]

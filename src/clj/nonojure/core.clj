@@ -58,7 +58,7 @@
       (wrap-logging)))
 
 (defn start []
-  (db/connect)
+  (db/connect (:mongo config))
   (let [stop (httpkit/run-server app (:web config))]
     (info (str "Started server on port " (get-in config [:web :port])))
     stop))
