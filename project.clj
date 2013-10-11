@@ -24,9 +24,16 @@
   :cljsbuild {:builds
               [{:source-paths ["src/cljs"],
                 :compiler {:output-to "resources/public/js/main.js",
-                           :pretty-print true,
+                           :pretty-print true
                            :optimizations :whitespace
-                           :print-input-delimiter true}}]}
+                           :print-input-delimiter true}}
+               {:id "prod"
+                :source-paths ["src/cljs"]
+                :compiler {:output-to "resources/public/js/main.js",
+                           :pretty-print false
+                           :optimizations :advanced
+                           :externs ["externs/jquery-1.9.js"]
+                           :print-input-delimiter false}}]}
 
   :garden {:source-path "src/garden"
            :output-path "resources/public/css"})
