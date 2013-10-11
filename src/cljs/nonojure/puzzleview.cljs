@@ -4,6 +4,7 @@
    [dommy.utils :as utils]
    [dommy.core :as dommy :refer [listen! attr append!]]
    [jayq.util :refer [log]]
+   [jayq.core :refer [ajax]]
    [cljs.core.async :refer [put! <! >! chan]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]
@@ -175,66 +176,52 @@
     (map count)
     vec))
 
-(defn check-solution []
+(defn valid-solution?
   "Returns true if current state of puzzle is a valid solution, false otherwise"
-  (let [problem (cljs.reader/read-string (attr (sel1 :#puzzle-table) "problem-def"))
-        hor-prob (get problem :left)
-        ver-prob (get problem :top)
-        hor-size (count ver-prob)
-        ver-size (count hor-prob)
-        solution (extract-solution)
-        hor-sol (->> solution
-                  (map extract-numbers)
-                  (into []))
-        rows-correct (for [r (range ver-size)]
-                       (= (nth hor-sol r)
-                          (nth hor-prob r)))
-        rows-wrong (->> rows-correct
-                     (map-indexed #(if %2 :correct %1))
-                     (filter #(not (= :correct %))))
-        ver-sol (->> (range hor-size)
-                  (map (fn [num] (map #(nth % num) solution)))
-                  (map extract-numbers)
-                  (into []))
-        columns-correct (for [c (range hor-size)]
-                          (= (nth ver-sol c)
-                             (nth ver-prob c)))
-        cols-wrong (->> columns-correct
-                     (map-indexed #(if %2 :correct %1))
-                     (filter #(not (= :correct %))))]
-    {:rows-wrong rows-wrong
-     :cols-wrong cols-wrong}))
+  [{:keys [board puzzle]}]
+  (let [row-to-numbers (fn [row]
+                         (->> (partition-by identity row)
+                              (filter #(= :filled (first %)))
+                              (map count)))
+        left (map row-to-numbers board)
+        top (->> (apply map vector board)
+                 (map row-to-numbers))]
+    (and (= left (:left puzzle))
+         (= top (:top puzzle)))))
 
-(defn rate [diff]
-  "Submits rating for puzzle id. Assumed to be called from rating dialog.
-  Puzzle ID is implicitly taken from dialog properties"
-  (let [args (.-dialogArguments js/window)
-        id (.-id args) ]
-    (goog.net.XhrIo/send (str "/api/rate/" id "?difficulty=" diff) #(.close js/window))))
+(defn rate-puzzle [id difficulty]
+  (let [url (str "/api/rate/" id "?difficulty=" difficulty)]
+    (ajax url {:type :POST}))
+  (dommy/set-text! (sel1 [:#puzzle :.invitation]) "thank you!")
+  (dommy/remove! (sel1 [:#puzzle :.choices])))
 
-(defn rate-dialog [id]
-  "Shows rate dialog for given puzzle id"
-  (let [d-attrs (js-obj)
-        _ (set! (.-id d-attrs) id)]
-    (js/showModalDialog "rating" d-attrs "dialogWidth:250; dialogHeight:100; dialogLeft:860; dialogTop: 540; resizable: no")))
+(defn show-solved-div [id]
+  (let [div [:div#solved
+             [:p.solved-caption "solved!"]
+             [:p.invitation "it was"]
+             [:div.choices
+              [:p {:data-value 1} "easy"]
+              [:p {:data-value 2} "medium"]
+              [:p {:data-value 3} "hard"]]]]
+    (dommy/insert-after! div (sel1 :#puzzle-view))
+    (listen! [(sel1 :#solved) :.choices :p] :click
+      (fn [evt]
+        (let [el (.-target evt)]
+          (rate-puzzle id (attr el :data-value)))))))
 
-(defn done-handler [evt]
-  (let [wrong (check-solution)
-        rows-wrong (get wrong :rows-wrong)
-        cols-wrong (get wrong :cols-wrong)
-        problem-def (attr (sel1 :#puzzle-table) "problem-def")
-        server-id (get problem-def :id)
-        done (and (empty? rows-wrong)
-                  (empty? cols-wrong))]
-    (if done
-      (rate-dialog server-id)
-      (js/alert (str "There are errors in rows:" rows-wrong "and columns:" cols-wrong)))
-    done))
+(defn check-solution [state]
+  (let [id (get-in state [:puzzle :id])]
+    (if (and (not (:solved? state))
+             (valid-solution? state))
+      (do (show-solved-div id)
+          (assoc state :solved? true))
+      state)))
 
 (defn clear-puzzle []
   (doseq [class ["num-clicked" "filled" "crossed"]
           el (sel (str "." class))]
-    (dommy/remove-class! el class)))
+    (dommy/remove-class! el class))
+  (dommy/remove! (sel1 [:#puzzle :#solved])))
 
 (defn change-cell-style! [cell style]
   (case style
@@ -312,16 +299,17 @@
               :last-cell [x y]
               :board (change-cell-in-board (:board state) x y fill-style))))))))
 
-(defn stop-dragging [initial-state {:keys [fill-style base-cell last-cell board drag-type]}]
-  (assoc initial-state :board
-    (if (and fill-style (= :rect drag-type))
-      (update-region-of-board board base-cell last-cell fill-style)
-      board)))
+(defn stop-dragging [{:keys [fill-style base-cell last-cell board drag-type] :as state}]
+  (-> state
+      (assoc :board (if (and fill-style (= :rect drag-type))
+                      (update-region-of-board board base-cell last-cell fill-style)
+                      board))
+      (dissoc :fill-style :last-cell :base-cell)))
 
-(defn cancel-dragging [initial-state {:keys [fill-style base-cell last-cell board]}]
+(defn cancel-dragging [{:keys [fill-style base-cell last-cell board] :as state}]
   (when fill-style
     (update-cells-region-style! base-cell last-cell (fn [x y] (get-in board [y x]))))
-  (assoc initial-state :board board))
+  (dissoc state :fill-style :last-cell :base-cell))
 
 (defn disable-context-menu [evt]
   (.preventDefault evt)
@@ -348,7 +336,6 @@
     (listen! [(sel1 :#puzzle-table) :.num]
              :mousedown (add-event :number-click)
              :contextmenu disable-context-menu)
-    (listen! (sel1 :#button-done) :click (add-event :done))
     (listen! (sel1 :#button-clear) :click (add-event :clear))))
 
 (defn handle-cell-events [event-chan initial-state]
@@ -358,10 +345,9 @@
    (let [new-state (case event-type
                      :mousedown-cell (handle-mouse-down-on-cell evt state)
                      :mouseenter-cell (handle-mouse-enter-on-cell evt state)
-                     :mouseup-cell (stop-dragging initial-state state)
-                     :mouseleave-board (cancel-dragging initial-state state)
+                     :mouseup-cell (check-solution (stop-dragging state))
+                     :mouseleave-board (cancel-dragging state)
                      :number-click (handle-number-click evt)
-                     :done (if (done-handler evt) initial-state state)
                      :clear (do (clear-puzzle) initial-state)
                      :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
                      (do (log (str "Unknown event: " event-type)) state))]
@@ -369,6 +355,8 @@
 
 (defn show [nono]
   (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
+  (when-let [solved (sel1 [:#puzzle :#solved])]
+    (dommy/remove! solved))
   (let [event-chan (chan 5)]
     (add-handlers event-chan)
     (handle-cell-events event-chan
@@ -376,6 +364,7 @@
                          :base-cell nil
                          :last-cell nil
                          :drag-type :rect
+                         :puzzle nono
                          :board (init-board (count (:top nono)) (count (:left nono)))}))
   (show-view :puzzle))
 
@@ -384,8 +373,6 @@
   (append! el [:div#puzzle-view.center [:div#puzzle-table]])
   (append! el [:div.button-container
                [:form
-                [:input#button-done {:type "button"
-                                     :value "Done!"}]
                 [:input#button-clear {:type "button"
                                       :value "Clear!"}]]])
-  (show (nonojure.random/generate-puzzle 8 10)))
+  (show (nonojure.random/generate-puzzle 5 5)))

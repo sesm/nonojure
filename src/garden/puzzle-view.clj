@@ -78,4 +78,26 @@
     [:.footer.first
         [:td.hide {:border-top "1px solid black"}]]
 
-    [:td.highlighted {:background-color "#fffbcc"}]]
+    [:td.highlighted {:background-color "#fffbcc"}]
+
+    [:#solved {:text-align "center"}
+
+        [:p {:margin "0px"}]
+
+        [:.solved-caption
+            {:font-size "30px"
+             :margin "10px 0px"}]
+
+        [:.invitation {:font-size "20px"}]
+
+        [:.choices
+
+            [:p
+                {:display "inline-block"
+                 :font-size "20px"
+                 :margin "0px 5px"
+                 :color "#888"}
+
+                [:&:hover
+                 {:color "black"
+                  :cursor "pointer"}]]]]]

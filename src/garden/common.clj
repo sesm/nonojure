@@ -8,7 +8,8 @@
 [:.header
     {:text-transform "uppercase"
      :font-size "2.7em"
-     :margin "0px"}]
+     :margin "0px"
+     :text-align "center"}]
 
 [:.head-div
     {:position "relative"
