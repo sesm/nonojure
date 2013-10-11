@@ -2,11 +2,11 @@
   (:require [jayq.util :refer [log]]))
 
 (defprotocol Storage
-  (load-progress [this])
-  (load-progress-for-puzzle [this id])
-  (save-auto! [this id progress])
-  (save-manual! [this id progress])
-  (solved! [this id solution]))
+  (load-progress [this callback])
+  (load-progress-for-puzzle [this id callback])
+  (save-auto! [this id progress callback])
+  (save-manual! [this id progress callback])
+  (solved! [this id solution callback]))
 
 (defn to-str [data]
   (.stringify js/JSON (clj->js data)))
@@ -30,40 +30,40 @@
 
 (extend-protocol Storage
   js/Storage
-  (load-progress [this]
-    (get-item this "progressAll"))
-  (load-progress-for-puzzle [this id]
-    (get-item this id))
-  (save-auto! [this id progress]
-    (update-progress this id {:auto progress} :in-progress))
-  (save-manual! [this id progress]
-    (update-progress this id {:manual progress} :in-progress))
-  (solved! [this id solution]
-    (update-progress this id {:solution solution} :solved)))
+  (load-progress [this callback]
+    (callback (get-item this "progressAll")))
+  (load-progress-for-puzzle [this id callback]
+    (callback (get-item this id)))
+  (save-auto! [this id progress callback]
+    (callback (update-progress this id {:auto progress} :in-progress)))
+  (save-manual! [this id progress callback]
+    (callback (update-progress this id {:manual progress} :in-progress)))
+  (solved! [this id solution callback]
+    (callback (update-progress this id {:solution solution} :solved))))
 
 (defn ^:export init []
   (let [log #(log (clj->js %))
         storage window/localStorage]
-    (log (load-progress storage))
+    (load-progress storage log)
 
     (log "Save auto mar")
-    (save-auto! storage "mar" {:left [[1] [2]] :top [[1]]})
-    (log (load-progress storage))
-    (log (load-progress-for-puzzle storage "mar"))
+    (save-auto! storage "mar" {:left [[1] [2]] :top [[1]]} log)
+    (load-progress storage log)
+    (load-progress-for-puzzle storage "mar" log)
 
     (log "Save auto asf")
-    (save-auto! storage "asf" {:left [[1] [2]] :top [[1]]})
-    (log (load-progress storage))
-    (log (load-progress-for-puzzle storage "asf"))
+    (save-auto! storage "asf" {:left [[1] [2]] :top [[1]]} log)
+    (load-progress storage log)
+    (load-progress-for-puzzle storage "asf" log)
 
     (log "Save manual mar")
-    (save-manual! storage "mar" {:left [[1] [2]] :top [[1]]})
-    (log (load-progress storage))
-    (log (load-progress-for-puzzle storage "mar"))
+    (save-manual! storage "mar" {:left [[1] [2]] :top [[1]]} log)
+    (load-progress storage log)
+    (load-progress-for-puzzle storage "mar" log)
 
     (log "Solving asf")
-    (solved! storage "asf" {:left [] :right []})
-    (log (load-progress storage))
-    (log (load-progress-for-puzzle storage "asf"))
+    (solved! storage "asf" {:left [] :right []} log)
+    (load-progress storage log)
+    (load-progress-for-puzzle storage "asf" log)
 
     ))
