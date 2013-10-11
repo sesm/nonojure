@@ -76,4 +76,6 @@
         [:td.hide {:border-bottom "1px solid black"}]]
 
     [:.footer.first
-        [:td.hide {:border-top "1px solid black"}]]]
+        [:td.hide {:border-top "1px solid black"}]]
+
+    [:td.highlighted {:background-color "#fffbcc"}]]

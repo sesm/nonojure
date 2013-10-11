@@ -72,17 +72,19 @@
 (defn create-row [nums offset row-num row-length]
   "Takes a vector of row numbers, offset (assumed to be longer then row numbers vector),
   row number and row length. Returns template for nodes construction"
-  (let [ num-tds (map-indexed
-                  (fn [ind n]
-                    [:td.num {:data-coord (str "l" ind "x" row-num)} n])
-                  nums)
-         pad-length (- offset (count nums))
-         num-tds-left (pad num-tds pad-length 0 [:td.nothing])
-         num-tds-right(pad num-tds 0 pad-length [:td.nothing])
-         cells (for [c (range row-length)]
-                 [:td {:class (str "cell c" c " r" row-num)
-                       :data-x c
-                       :data-y row-num}])]
+  (let [num-tds (map-indexed
+                 (fn [ind n]
+                   [:td {:class (str "num r" row-num)
+                         :data-coord (str "l" ind "x" row-num)} n])
+                 nums)
+        pad-length (- offset (count nums))
+        empty-cell [:td {:class (str "nothing r" row-num)}]
+        num-tds-left (pad num-tds pad-length 0 empty-cell)
+        num-tds-right(pad num-tds 0 pad-length empty-cell)
+        cells (for [c (range row-length)]
+                [:td {:class (str "cell c" c " r" row-num)
+                      :data-x c
+                      :data-y row-num}])]
     (-> [(keyword (str "tr.row.row" row-num)) {:class ""}]
       (into num-tds-left)
       (into (add-thick-class cells))
@@ -97,11 +99,11 @@
       (for [row (range longest)]
         (let [nums-col (map #(nth % row) padded)
               tds  (map-indexed
-                    #(if %2 [:td {:class "num"
+                    #(if %2 [:td {:class (str "num c" %1)
                                   :data-coord (str "t" %1 "x"
                                                    (->> (nth nums %1) count (- longest) (- row)))}
                              %2]
-                         [:td {:class "nothing"}])
+                         [:td {:class (str "nothing c" %1)}])
                         nums-col)]
         (into [:tr {:class (cond (zero? row) "first"
                                  (= row (dec longest)) "last"
@@ -121,9 +123,9 @@
         (let [nums-col (map #(nth % row) padded)
               tds  (map-indexed
                     #(if %2
-                       [:td {:class "num"
+                       [:td {:class (str "num c" %1)
                              :data-coord (str "t" %1 "x" row)} %2]
-                       [:td {:class "nothing"}])
+                       [:td {:class (str "nothing c" %1)}])
                      nums-col)]
           (into [:tr {:class (cond (zero? row) "first footer"
                                (= row (dec longest)) "last footer"
@@ -249,6 +251,15 @@
           :let [cell (sel1 (str ".r" y ".c" x))]]
         (change-cell-style! cell (style-fn x y))))
 
+
+(defn highlight-row-col [row col]
+  (doseq [el (sel [:#puzzle :.highlighted])]
+    (dommy/remove-class! el "highlighted"))
+  (doseq [el (sel [:#puzzle (str ".c" col)])]
+    (dommy/add-class! el "highlighted"))
+  (doseq [el (sel [:#puzzle (str ".r" row)])]
+    (dommy/add-class! el "highlighted")))
+
 (defn cell-style [cell]
   (cond (dommy/has-class? cell "filled") :filled
         (dommy/has-class? cell "crossed") :crossed
@@ -283,22 +294,23 @@
       :board (change-cell-in-board (:board state) x y style))))
 
 (defn handle-mouse-enter-on-cell [evt state]
-  (if-not (:fill-style state)
-    state
-    (let [cell (.-target evt)
-          x (attr-int cell :data-x)
-          y (attr-int cell :data-y)
-          {:keys [fill-style base-cell last-cell drag-type]} state]
-      (if (= :rect drag-type)
-        (do
-          (update-cells-region-style! base-cell last-cell (fn [x y] (get-in state [:board y x])))
-          (update-cells-region-style! base-cell [x y] (constantly fill-style))
-          (assoc state :last-cell [x y]))
-        (do
-          (change-cell-style! cell fill-style)
-          (assoc state
-            :last-cell [x y]
-            :board (change-cell-in-board (:board state) x y fill-style)))))))
+  (let [cell (.-target evt)
+        x (attr-int cell :data-x)
+        y (attr-int cell :data-y)]
+    (highlight-row-col y x)
+    (if-not (:fill-style state)
+      state
+      (let [{:keys [fill-style base-cell last-cell drag-type]} state]
+        (if (= :rect drag-type)
+          (do
+            (update-cells-region-style! base-cell last-cell (fn [x y] (get-in state [:board y x])))
+            (update-cells-region-style! base-cell [x y] (constantly fill-style))
+            (assoc state :last-cell [x y]))
+          (do
+            (change-cell-style! cell fill-style)
+            (assoc state
+              :last-cell [x y]
+              :board (change-cell-in-board (:board state) x y fill-style))))))))
 
 (defn stop-dragging [initial-state {:keys [fill-style base-cell last-cell board drag-type]}]
   (assoc initial-state :board
@@ -320,12 +332,14 @@
 (defn add-handlers [event-chan]
   (let [add-event (fn [event-type] #(put! event-chan [% event-type]))]
     (listen! [(sel1 :#puzzle-table) :.cell]
-             :mousedown (add-event :mousedown)
+             :mousedown (add-event :mousedown-cell)
              :contextmenu disable-context-menu
-             :mouseenter (add-event :mouseenter))
+             :mouseenter (add-event :mouseenter-cell))
     (listen! (sel1 :#puzzle-table)
-             :mouseup (add-event :mouseup)
-             :mouseleave (add-event :mouseleave))
+             :mouseup (add-event :mouseup-cell)
+             :mouseleave (add-event :mouseleave-board))
+    (listen! [(sel1 :#puzzle-table) "td:not(.cell)"]
+             :mouseenter (add-event :mouseleave-drawing-board))
     (listen! [(sel1 :#puzzle-table) :.num]
              :mousedown (add-event :number-click)
              :contextmenu disable-context-menu)
@@ -337,14 +351,14 @@
    [[evt event-type] (<! event-chan)
     state initial-state]
    (let [new-state (case event-type
-                     :mousedown (handle-mouse-down-on-cell evt state)
-                     :contextmenu (disable-context-menu evt)
-                     :mouseenter (handle-mouse-enter-on-cell evt state)
-                     :mouseup (stop-dragging initial-state state)
-                     :mouseleave (stop-dragging initial-state state)
+                     :mousedown-cell (handle-mouse-down-on-cell evt state)
+                     :mouseenter-cell (handle-mouse-enter-on-cell evt state)
+                     :mouseup-cell (stop-dragging initial-state state)
+                     :mouseleave-board (stop-dragging initial-state state)
                      :number-click (handle-number-click evt)
                      :done (if (done-handler evt) initial-state state)
                      :clear (do (clear-puzzle) initial-state)
+                     :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
                      (do (log (str "Unknown event: " event-type)) state))]
      (recur (<! event-chan) new-state))))
 
