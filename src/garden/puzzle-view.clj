@@ -2,9 +2,11 @@
 
 [:#puzzle
 
-    [:.puzzle-table-non {:border-collapse "collapse"}
+    [:#puzzle-table {:border-collapse "collapse"}
 
-        [:td :th {:cursor "pointer"}]]
+        [:td :th {:cursor "pointer"}]
+
+        [:&.solved [:.num {:background-color "#c4faaf"}]]]
 
     [:.containter
         {:padding "30px"

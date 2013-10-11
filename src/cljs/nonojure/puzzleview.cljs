@@ -150,10 +150,7 @@
                 (if (zero? (rem r 5))
                   (add-class-templ row " thick-top")
                   row))]
-    (-> [:table#table.puzzle-table-non.number-text.medium-cells
-         {:id "puzzle-table"
-          :problem-def data
-          :data-help "test"}]
+    (-> [:table#puzzle-table.number-text.medium-cells]
       (into header)
       (into (update-last rows add-class-templ " thick-bottom"))
       (into bottom))))
@@ -204,6 +201,7 @@
               [:p {:data-value 2} "medium"]
               [:p {:data-value 3} "hard"]]]]
     (dommy/insert-after! div (sel1 :#puzzle-view))
+    (dommy/add-class! (sel1 :#puzzle-table) "solved")
     (listen! [(sel1 :#solved) :.choices :p] :click
       (fn [evt]
         (let [el (.-target evt)]
@@ -242,9 +240,9 @@
 (defn highlight-row-col [row col]
   (doseq [el (sel [:#puzzle :.highlighted])]
     (dommy/remove-class! el "highlighted"))
-  (doseq [el (sel [:#puzzle (str ".c" col)])]
+  (doseq [el (sel [:#puzzle (str ".num.c" col)])]
     (dommy/add-class! el "highlighted"))
-  (doseq [el (sel [:#puzzle (str ".r" row)])]
+  (doseq [el (sel [:#puzzle (str ".num.r" row)])]
     (dommy/add-class! el "highlighted")))
 
 (defn cell-style [cell]
