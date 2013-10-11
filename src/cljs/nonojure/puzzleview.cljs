@@ -231,7 +231,7 @@
 
 (defn clear-puzzle []
   (doseq [class ["num-clicked" "filled" "crossed"]
-          :let [el (sel (str "." class))]]
+          el (sel (str "." class))]
     (dommy/remove-class! el class)))
 
 (defn change-cell-style! [cell style]
@@ -360,8 +360,13 @@
                          :board (init-board (count (:top nono)) (count (:left nono)))}))
   (show-view :puzzle))
 
-(defn ^:export init []
-  (when (and js/document
-             (aget js/document "getElementById"))
-    (dommy/prepend! (sel1 :#puzzle-view) (node [:div#puzzle-table]))
-    (show (nonojure.random/generate-puzzle 8 10))))
+(defn ^:export init [el]
+  (dommy/add-class! el "center")
+  (append! el [:div#puzzle-view.center [:div#puzzle-table]])
+  (append! el [:div.button-container
+               [:form
+                [:input#button-done {:type "button"
+                                     :value "Done!"}]
+                [:input#button-clear {:type "button"
+                                      :value "Clear!"}]]])
+  (show (nonojure.random/generate-puzzle 8 10)))
