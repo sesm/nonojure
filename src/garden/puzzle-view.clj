@@ -43,7 +43,7 @@
          :margin-left "auto"}]
 
     [:.filled
-        {:background-image "url(\"/static/img/clicked.gif\")"
+        {:background-image "url(\"/static/img/clicked.png\")"
          :background-repeat "no-repeat"
          :background-position "50% 50%"
          :background-size "20px 20px"}]
