@@ -219,7 +219,9 @@
   (doseq [class ["num-clicked" "filled" "crossed"]
           el (sel (str "." class))]
     (dommy/remove-class! el class))
-  (dommy/remove! (sel1 [:#puzzle :#solved])))
+  (when-let [solved-div (sel1 [:#puzzle :#solved])]
+   (dommy/remove! solved-div))
+  (dommy/remove-class! (sel1 :#puzzle-table) "solved"))
 
 (defn change-cell-style! [cell style]
   (case style
