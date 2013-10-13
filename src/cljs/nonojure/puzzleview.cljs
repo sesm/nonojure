@@ -173,8 +173,9 @@
     (map count)
     vec))
 
-(defn valid-solution?
-  "Returns true if current state of puzzle is a valid solution, false otherwise"
+(defn valid-rows-cols
+  "Returns indices of valid rows and cols.
+Also adds :valid? bool value to map indicating whether everyting is correct."
   [{:keys [board puzzle]}]
   (let [row-to-numbers (fn [row]
                          (->> (partition-by identity row)
@@ -182,9 +183,17 @@
                               (map count)))
         left (map row-to-numbers board)
         top (->> (apply map vector board)
-                 (map row-to-numbers))]
-    (and (= left (:left puzzle))
-         (= top (:top puzzle)))))
+                 (map row-to-numbers))
+        filter-equals (fn [a b]
+                        (for [ind (range (count a))
+                              :when (= (nth a ind) (nth b ind))]
+                          ind))
+        rows (filter-equals left (:left puzzle))
+        cols (filter-equals top (:top puzzle))]
+    {:rows rows
+     :cols cols
+     :valid? (and (= (count rows) (count left))
+                  (= (count cols) (count top)))}))
 
 (defn rate-puzzle [id difficulty]
   (let [url (str "/api/rate/" id "?difficulty=" difficulty)]
@@ -201,16 +210,26 @@
               [:p {:data-value 2} "medium"]
               [:p {:data-value 3} "hard"]]]]
     (dommy/insert-after! div (sel1 :#puzzle-view))
-    (dommy/add-class! (sel1 :#puzzle-table) "solved")
     (listen! [(sel1 :#solved) :.choices :p] :click
       (fn [evt]
         (let [el (.-target evt)]
           (rate-puzzle id (attr el :data-value)))))))
 
+(defn highlight-solved-rows-cols [rows cols]
+  (doseq [el (sel :.solved.num)]
+    (dommy/remove-class! el "solved"))
+  (let [rows (map #(str ".num.r" %) rows)
+        cols (map #(str ".num.c" %) cols)]
+   (doseq [cls (concat rows cols)
+           el (sel cls)]
+     (dommy/add-class! el "solved"))))
+
 (defn check-solution [state]
-  (let [id (get-in state [:puzzle :id])]
+  (let [id (get-in state [:puzzle :id])
+        {:keys [cols rows valid?]} (valid-rows-cols state)]
+    (highlight-solved-rows-cols rows cols)
     (if (and (not (:solved? state))
-             (valid-solution? state))
+             valid?)
       (do (show-solved-div id)
           (assoc state :solved? true))
       state)))

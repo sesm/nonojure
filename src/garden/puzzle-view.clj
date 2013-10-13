@@ -6,7 +6,7 @@
 
         [:td :th {:cursor "pointer"}]
 
-        [:&.solved [:.num {:background-color "#c4faaf"}]]]
+        [:.solved.num {:background-color "#c4faaf"}]]
 
     [:.containter
         {:padding "30px"
