@@ -389,9 +389,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 
 (defn ^:export init [el]
   (dommy/add-class! el "center")
-  (append! el [:div#puzzle-view.center [:div#puzzle-table]])
   (append! el [:div.button-container
-               [:form
-                [:input#button-clear {:type "button"
-                                      :value "Clear!"}]]])
+               [:p.button#button-clear "clear"]])
+  (append! el [:div#puzzle-view.center [:div#puzzle-table]])
   (show (nonojure.random/generate-puzzle 5 5)))

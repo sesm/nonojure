@@ -1,5 +1,8 @@
  (require '[garden.units :refer [px px*]])
 
+(def inactive-color "#888")
+(def active-color "#000")
+
 [:#puzzle
 
     [:#puzzle-table {:border-collapse "collapse"}
@@ -56,11 +59,15 @@
          :background-position "50% 50%"
          :background-size "25px 25px"}]
 
-    [:.button-container
-        {:margin-top "10px"
-         :padding "10px"
-         :margin-left "3px"
-         :text-align "center"}]
+    [:.button-container {:text-align "center"}
+
+        [:.button
+             {:font-size "16px"
+              :color inactive-color}
+
+             [:&:hover
+                  {:color active-color
+                   :cursor "pointer"}]]]
 
     [:.num-clicked {:color "red"}]
 
@@ -98,8 +105,8 @@
                 {:display "inline-block"
                  :font-size "20px"
                  :margin "0px 5px"
-                 :color "#888"}
+                 :color inactive-color}
 
                 [:&:hover
-                 {:color "black"
+                 {:color active-color
                   :cursor "pointer"}]]]]]
