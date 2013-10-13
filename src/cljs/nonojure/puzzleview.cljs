@@ -347,7 +347,7 @@
                      :mouseenter-cell (handle-mouse-enter-on-cell evt state)
                      :mouseup-cell (check-solution (stop-dragging state))
                      :mouseleave-board (cancel-dragging state)
-                     :number-click (handle-number-click evt)
+                     :number-click (do (handle-number-click evt) state)
                      :clear (do (clear-puzzle) initial-state)
                      :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
                      (do (log (str "Unknown event: " event-type)) state))]
