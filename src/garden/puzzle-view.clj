@@ -9,7 +9,7 @@
 
         [:td :th {:cursor "pointer"}]
 
-        [:.solved.num {:background-color "#c4faaf"}]]
+        [:.solved.num :.num-clicked {:background-color "#c4faaf"}]]
 
     [:.containter
         {:padding "30px"
@@ -68,8 +68,6 @@
              [:&:hover
                   {:color active-color
                    :cursor "pointer"}]]]
-
-    [:.num-clicked {:color "red"}]
 
     (for [dir ["top" "bottom" "left" "right"]]
       [(str ".thick-" dir)
