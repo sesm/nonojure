@@ -337,7 +337,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 (defn handle-number-click [evt]
   (let [cell (.-target evt)
         coord (attr cell :data-coord)
-        query (str "td[data-coord*='" coord "']")]
+        query (str "td[data-coord='" coord "']")]
     (doseq [el (sel query)]
       (dommy/toggle-class! el "num-clicked"))))
 
