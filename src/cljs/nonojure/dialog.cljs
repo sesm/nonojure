@@ -2,8 +2,7 @@
   (:require
    [nonojure.navigation :refer [show-view]]
    [dommy.utils :as utils]
-   [dommy.core :as dommy]
-   [jayq.util :refer [log]])
+   [dommy.core :as dommy])
   (:use-macros
    [dommy.macros :only [deftemplate sel1]]))
 

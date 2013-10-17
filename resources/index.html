@@ -7,7 +7,6 @@
     <link rel="stylesheet" type="text/css" href="/static/css/puzzle-view.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/browser-view.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/common.css"/>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script type="text/javascript" src="/static/js/main.js" ></script>
   </head>
   <body>
@@ -18,11 +17,9 @@
     <div id="views"></div>
   </body>
   <script>
-    $(function() {
     nonojure.navigation.init();
-    nonojure.puzzleview.init($("#puzzle")[0]);
-    nonojure.puzzlebrowser.init($("#browser")[0]);
-    nonojure.connect.connect();
-    });
+    nonojure.puzzleview.init(document.getElementById("puzzle"));
+    nonojure.puzzlebrowser.init(document.getElementById("browser"));
+    // nonojure.connect.connect();
   </script>
 </html>

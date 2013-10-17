@@ -1,8 +1,7 @@
 (ns nonojure.puzzlebrowser
   (:require
    [dommy.core :as dommy]
-   [jayq.core :refer [ajax]]
-   [jayq.util :refer [log]]
+   [nonojure.utils :refer [ajax log]]
    [monet.canvas :as c]
    [clojure.string :refer [join]])
   (:use-macros
@@ -84,9 +83,8 @@
                          (map #(join "=" %))
                          (join "&"))
         url (str "/api/nonograms" (if (empty? clauses-str) "" "?") clauses-str)]
-    (log (str "Sending " url))
-    (ajax url {:success #(create-thumbnails %)
-               :error #(js/alert "Error")})))
+    (log "Sending" url)
+    (ajax url create-thumbnails)))
 
 (defn reload-thumbnails []
   (let [selected (sel1 @root :.selected)
@@ -135,10 +133,8 @@
       (let [thumb (.-selectedTarget event)
             id (dommy/attr thumb :data-id)
             url (str "/api/nonograms/" id)]
-        (ajax url {:success #(do (show-puzzle (js->clj %))
-                               (.scrollTo js/window 0 0))
-                   :error #(do (log "Error loading puzzle")
-                               (log %))})))))
+        (ajax url #(do (show-puzzle (js->clj %))
+                       (.scrollTo js/window 0 0)))))))
 
 (defn ^:export init [el]
   (reset! root el)

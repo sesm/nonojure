@@ -1,5 +1,5 @@
 (ns nonojure.storage
-  (:require [jayq.util :refer [log]]))
+  (:require [nonojure.utils :refer [log]]))
 
 (defprotocol Storage
   (load-progress [this callback])
@@ -42,8 +42,7 @@
     (callback (update-progress this id {:solution solution} :solved))))
 
 (defn ^:export init []
-  (let [log #(log (clj->js %))
-        storage window/localStorage]
+  (let [storage window/localStorage]
     (load-progress storage log)
 
     (log "Save auto mar")

@@ -1,7 +1,6 @@
 (ns nonojure.api-examples
   (:require [dommy.core :as dc]
-            [jayq.util :refer [log]]
-            [jayq.core :refer [ajax]]
+            [nonojure.utils :refer [log ajax]]
             [clojure.string :refer [join]])
   (:use-macros [dommy.macros :only [sel1 deftemplate]]))
 
@@ -33,12 +32,9 @@
         method (dc/text (sel1 request-node :.method))
         url (dc/value (sel1 request-node :.url))
         result-holder (sel1 request-node :.result)]
-    (ajax url
-          {:type method
-           :success #(update-result result-holder %)
-           :error #(update-result result-holder (clj->js {:result "Bad request"
-                                                          :xhr %}))})
-    (log (str method " " url))))
+    (ajax url #(update-result result-holder %) method #(update-result result-holder (clj->js {:result "Bad request"
+                                                          :xhr %})))
+    (log method url)))
 
 (defn ^:export init []
   (doseq [request requests]

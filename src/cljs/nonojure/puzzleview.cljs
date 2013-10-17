@@ -2,10 +2,9 @@
   (:require
    [nonojure.navigation :refer [show-view]]
    [nonojure.dialog :as dialog]
+   [nonojure.utils :refer [ajax log]]
    [dommy.utils :as utils]
    [dommy.core :as dommy :refer [listen! attr append!]]
-   [jayq.util :refer [log]]
-   [jayq.core :refer [ajax]]
    [cljs.core.async :refer [put! <! >! chan]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]
@@ -198,7 +197,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 
 (defn rate-puzzle [id difficulty]
   (let [url (str "/api/rate/" id "?difficulty=" difficulty)]
-    (ajax url {:type :POST})))
+    (ajax url nil :POST)))
 
 (defn show-solved-div [id]
   (let [div [:div#solved
@@ -369,7 +368,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                      :number-click (do (handle-number-click evt) state)
                      :clear (do (clear-puzzle) initial-state)
                      :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
-                     (do (log (str "Unknown event: " event-type)) state))]
+                     (do (log "Unknown event:" event-type) state))]
      (recur (<! event-chan) new-state))))
 
 (defn show [nono]
@@ -392,4 +391,5 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   (append! el [:div.button-container
                [:p.button#button-clear "clear"]])
   (append! el [:div#puzzle-view.center [:div#puzzle-table]])
-  (show (nonojure.random/generate-puzzle 5 5)))
+  (show {:left [[5] [5] [5] [5] [5]]
+         :top [[5] [5] [5] [5] [5]]}))

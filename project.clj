@@ -16,7 +16,6 @@
                  [com.novemberain/monger "1.5.0"]
                  [org.clojure/tools.reader "0.7.8"]
 
-                 [jayq "2.4.0"]
                  [prismatic/dommy "0.1.1"]
                  [rm-hull/monet "0.1.8"]]
   :main nonojure.runner

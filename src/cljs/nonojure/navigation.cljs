@@ -1,8 +1,7 @@
 (ns nonojure.navigation
   (:require
    [dommy.core :as dommy
-               :refer [append!]]
-   [jayq.util :refer [log]])
+               :refer [append!]])
   (:use-macros
    [dommy.macros :only [sel sel1 deftemplate]]))
 
