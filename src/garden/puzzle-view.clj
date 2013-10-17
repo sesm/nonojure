@@ -85,9 +85,13 @@
     [:.footer.first
         [:td.hide {:border-top "1px solid black"}]]
 
-    [:td.highlighted {:background-color "#fffbcc"}]
+    [:td.highlighted {:background-color "#fffbcc"}]]
 
-    [:#solved {:text-align "center"}
+[:#dialog
+
+    [:#solved
+        {:text-align "center"
+         :display "inline-block"}
 
         [:p {:margin "0px"}]
 

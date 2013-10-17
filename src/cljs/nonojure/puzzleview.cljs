@@ -1,6 +1,7 @@
 (ns nonojure.puzzleview
   (:require
    [nonojure.navigation :refer [show-view]]
+   [nonojure.dialog :as dialog]
    [dommy.utils :as utils]
    [dommy.core :as dommy :refer [listen! attr append!]]
    [jayq.util :refer [log]]
@@ -197,9 +198,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 
 (defn rate-puzzle [id difficulty]
   (let [url (str "/api/rate/" id "?difficulty=" difficulty)]
-    (ajax url {:type :POST}))
-  (dommy/set-text! (sel1 [:#puzzle :.invitation]) "thank you!")
-  (dommy/remove! (sel1 [:#puzzle :.choices])))
+    (ajax url {:type :POST})))
 
 (defn show-solved-div [id]
   (let [div [:div#solved
@@ -208,12 +207,13 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
              [:div.choices
               [:p {:data-value 1} "easy"]
               [:p {:data-value 2} "medium"]
-              [:p {:data-value 3} "hard"]]]]
-    (dommy/insert-after! div (sel1 :#puzzle-view))
-    (listen! [(sel1 :#solved) :.choices :p] :click
+              [:p {:data-value 3} "hard"]]]
+        dlg (dialog/create div)]
+    (listen! [(sel1 dlg :#solved) :.choices :p] :click
       (fn [evt]
         (let [el (.-target evt)]
-          (rate-puzzle id (attr el :data-value)))))))
+          (rate-puzzle id (attr el :data-value))
+          (dialog/close dlg))))))
 
 (defn highlight-solved-rows-cols [rows cols]
   (doseq [el (sel :.solved.num)]

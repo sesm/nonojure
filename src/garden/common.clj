@@ -42,3 +42,39 @@
           :border-bottom "3px solid #888"}]]]
 
 [:.hidden {:display "none"}]
+
+[:#dialog
+
+    [:.darkener
+        {:background-color "#000"
+         :opacity 0.7
+         :position "absolute"
+         :top 0
+         :right 0
+         :left 0
+         :bottom 0
+         :z-index 90}]
+
+    [:.content-holder
+        {:position "absolute"
+         :text-align "center"
+         :top 0
+         :right 0
+         :left 0
+         :bottom 0
+         :z-index 100}
+
+         [:.floater
+             {:float "left"
+              :height "40%"}]
+
+         [:.content
+             {:background-color "#FFF"
+              :opacity 1
+              :clear "both"
+              :margin "auto"
+              :padding "15px"
+              :border-radius "5px"
+              :position "relative"}]]
+
+]
