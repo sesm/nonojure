@@ -237,8 +237,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   (doseq [class ["num-clicked" "filled" "crossed"]
           el (sel (str "." class))]
     (dommy/remove-class! el class))
-  (when-let [solved-div (sel1 [:#puzzle :#solved])]
-   (dommy/remove! solved-div))
+  (highlight-solved-rows-cols [] [])
   (dommy/remove-class! (sel1 :#puzzle-table) "solved"))
 
 (defn change-cell-style! [cell style]
