@@ -1,22 +1,27 @@
 (ns nonojure.utils
-  (:require [clojure.string :refer [join]]))
+  (:require [clojure.string :refer [join]])
+  (:import goog.debug.Logger
+           goog.debug.Console))
 
 (defn- ajax-callback [on-success evt]
   (let [xhr (.-target evt)
-        json (.getResponseJson xhr)]
+        json-data (.getResponseJson xhr)
+        clj-data (js->clj json-data)]
+    (log clj-data)
     (when on-success
-     (on-success json))))
+     (on-success clj-data))))
 
 (defn ajax [url & [on-success-fn method]]
   (goog.net.XhrIo.send url (partial ajax-callback on-success-fn)
                        (if (keyword? method) (name method) method)))
 
-(defn log [& msgs]
-  (letfn [(->clj [obj]
-            (if (coll? obj)
-              (clj->js obj)
-              (str obj)))]
-    (when js/console
-      (let [args (apply array (map ->clj msgs))]
-       (.apply (.-log js/console) js/console args)))))
+(def logger (goog.debug.Logger/getLogger ""))
 
+(def console (goog.debug.Console.))
+
+(.setCapturing console true)
+
+(defn log [& msgs]
+  (->> (map #(if (coll? %) (pr-str %) %) msgs)
+       (join " ")
+       (.info logger)))

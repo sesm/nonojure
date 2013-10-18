@@ -21,7 +21,7 @@
    [:textarea.result {:readonly "readonly"}]])
 
 (defn update-result [holder data]
-  (dc/set-value! holder (.stringify js/JSON data nil "  "))
+  (dc/set-value! holder (.stringify js/JSON (clj->js data) nil "  "))
   (dc/set-style! holder :height "0px")
   (let [real-height (str (.-scrollHeight holder) "px")]
    (dc/set-style! holder :height real-height)))

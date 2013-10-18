@@ -64,8 +64,7 @@
   (when-let [old (sel1 @root :#thumbnails)]
     (dommy/remove! old))
   (let [cells (for [nono nonos]
-                (let [nono (js->clj nono)]
-                  (-> nono nono-thumbnail (draw-grid nono))))
+                (-> nono nono-thumbnail (draw-grid nono)))
         padded-cells (concat cells (repeat (dec num-cols) [:td ""]))
         rows (partition num-cols padded-cells)
         contents (for [row rows] [:tr row])
@@ -133,7 +132,7 @@
       (let [thumb (.-selectedTarget event)
             id (dommy/attr thumb :data-id)
             url (str "/api/nonograms/" id)]
-        (ajax url #(do (show-puzzle (js->clj %))
+        (ajax url #(do (show-puzzle %)
                        (.scrollTo js/window 0 0)))))))
 
 (defn ^:export init [el]
