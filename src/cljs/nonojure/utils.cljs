@@ -7,7 +7,6 @@
   (let [xhr (.-target evt)
         json-data (.getResponseJson xhr)
         clj-data (js->clj json-data)]
-    (log clj-data)
     (when on-success
      (on-success clj-data))))
 
