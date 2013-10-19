@@ -6,7 +6,7 @@
 (defn- ajax-callback [on-success evt]
   (let [xhr (.-target evt)
         json-data (.getResponseJson xhr)
-        clj-data (js->clj json-data)]
+        clj-data (js->clj json-data :keywordize-keys true)]
     (when on-success
      (on-success clj-data))))
 

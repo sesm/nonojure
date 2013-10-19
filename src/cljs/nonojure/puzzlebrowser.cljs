@@ -22,8 +22,8 @@
 
 (defn draw-grid [thumbnail nono]
   (let [ctx (c/get-context (sel1 thumbnail :canvas) :2d)
-        width (nono "width")
-        height (nono "height")]
+        width (:width nono)
+        height (:height nono)]
     (c/translate ctx (/ cell-size 2) (/ cell-size 2))
     (c/stroke-width ctx 0.3)
     (doseq [x (range 0 width)
@@ -46,10 +46,10 @@
 
 (deftemplate nono-thumbnail [nono]
   (let [scale 20
-        width (get nono "width")
-        height (get nono "height")
-        difficulty (Math/round (get nono "difficulty"))
-        puzzle-id (get nono "id")]
+        width (:width nono)
+        height (:height nono)
+        difficulty (Math/round (:difficulty nono))
+        puzzle-id (:id nono)]
     [:div.thumbnail
      {:data-id puzzle-id}
      [:div.canvas-holder-outer
@@ -120,19 +120,13 @@
           (reload-thumbnails )))))
   filter-div)
 
-(defn show-puzzle [puzzle]
-  (let [view {:id (get puzzle "id")
-              :left (get puzzle "left")
-              :top (get puzzle "top")}]
-  (nonojure.puzzleview/show view)))
-
 (defn add-thumbnail-listener []
   (dommy/listen! [@root :.thumbnail] :click
     (fn [event]
       (let [thumb (.-selectedTarget event)
             id (dommy/attr thumb :data-id)
             url (str "/api/nonograms/" id)]
-        (ajax url #(do (show-puzzle %)
+        (ajax url #(do (nonojure.puzzleview/show %)
                        (.scrollTo js/window 0 0)))))))
 
 (defn ^:export init [el]
