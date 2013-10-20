@@ -2,6 +2,8 @@
 
 (def inactive-color "#888")
 (def active-color "#000")
+(def light-green "#c4faaf")
+(def light-yellow "#fffbcc")
 
 [:#puzzle
 
@@ -9,7 +11,7 @@
 
         [:td :th {:cursor "pointer"}]
 
-        [:.solved.num :.num-clicked {:background-color "#c4faaf"}]]
+        [:.solved.num :.num-clicked {:background-color light-green}]]
 
     [:.containter
         {:padding "30px"
@@ -85,7 +87,7 @@
     [:.footer.first
         [:td.hide {:border-top "1px solid black"}]]
 
-    [:td.highlighted {:background-color "#fffbcc"}]]
+    [:td.highlighted {:background-color light-yellow}]]
 
 [:#dialog
 

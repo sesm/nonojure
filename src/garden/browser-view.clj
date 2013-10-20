@@ -10,30 +10,44 @@
          :width "230px"
          :height "230px"
          :margin "10px"
+         :padding-bottom "10px"
          :float "left"
          :position "relative"}
 
         [:&:hover
             {:background-color "#EEE"
-             :cursor "pointer"}]]
+             :cursor "pointer"}]
 
-    [:.canvas-holder-inner
-        {:display "table-cell"
-         :vertical-align "middle"}]
+        [:.canvas-holder-inner
+            {:display "table-cell"
+             :vertical-align "middle"}]
 
-    [:.canvas-holder-outer
-        {:display "table"
-         :height "230px"
-         :width "100%"}]
+        [:.canvas-holder-outer
+            {:display "table"
+             :height "230px"
+             :width "100%"}]
 
-    [:.description
-        {:height "20px"
-         :bottom "20px"
-         :position "relative"}
+        [:.description
+            {:height "20px"
+             :bottom "20px"
+             :position "relative"}
 
-        [:.size :.difficulty
-            {:margin-right "10px"
-             :display "inline"}]]
+            [:.size :.difficulty
+                {:margin-right "10px"
+                 :display "inline"}]
+
+            [:&:before
+                {:display "inline-block"
+                 :margin-right "5px"
+                 :vertical-align "middle"}]]
+
+        [:&.solved
+
+            [:.description:before {:content "url('/static/img/solved.png')"}]]
+
+        [:&.in-progress
+
+            [:.description:before {:content "url('/static/img/in-progress.png')"}]]]
 
     [:.filtering
         {:width "500px"

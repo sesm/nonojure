@@ -2,6 +2,8 @@
   (:require
    [dommy.core :as dommy]
    [nonojure.utils :refer [ajax log]]
+   [nonojure.storage :as stg]
+   [nonojure.navigation :as nav]
    [monet.canvas :as c]
    [clojure.string :refer [join]])
   (:use-macros
@@ -60,6 +62,23 @@
       [:p.size.number-text (str width "×" height)]
       [:p.difficulty (difficulties difficulty)]]]))
 
+(defn- remove-all-classes [root class]
+  (doseq [el (sel root (str "." class))]
+    (dommy/remove-class! el class)))
+
+(defn apply-progress [progress]
+  (log "total progress" progress)
+  (remove-all-classes @root "in-progress")
+  (remove-all-classes @root "solved")
+  (when progress
+    (doseq [[id state] progress]
+      (let [query (str ".thumbnail[data-id='" (name id) "']")]
+        (when-let [thumbnail (sel1 @root query)]
+         (dommy/add-class! thumbnail state))))))
+
+(defn- reload-progress []
+  (stg/load-all-puzzles-progress window/localStorage apply-progress))
+
 (defn create-thumbnails [nonos]
   (when-let [old (sel1 @root :#thumbnails)]
     (dommy/remove! old))
@@ -69,7 +88,8 @@
         rows (partition num-cols padded-cells)
         contents (for [row rows] [:tr row])
         table [:table#table.puzzle-browser{:id "puzzle-browser" :border 1} contents]]
-    (dommy/append! @root [:div#thumbnails cells])))
+    (dommy/append! @root [:div#thumbnails cells]))
+  (reload-progress))
 
 (defn retrieve-thumbnails [{:keys [filter value sort order]}]
   (let [filter-clauses (if filter [["filter" filter]
@@ -88,7 +108,9 @@
 (defn reload-thumbnails []
   (let [selected (sel1 @root :.selected)
         clause {:filter (dommy/attr selected :data-filter)
-                :value (dommy/attr selected :data-value)}]
+                :value (dommy/attr selected :data-value)
+                :sort "size"
+                :order "asc"}]
     (retrieve-thumbnails clause)))
 
 
@@ -133,4 +155,5 @@
   (reset! root el)
   (dommy/append! @root (add-filtering-listener (filtering)))
   (add-thumbnail-listener)
-  (reload-thumbnails))
+  (reload-thumbnails)
+  (nav/on-show :browser reload-progress))

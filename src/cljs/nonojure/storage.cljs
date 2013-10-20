@@ -2,11 +2,10 @@
   (:require [nonojure.utils :refer [log]]))
 
 (defprotocol Storage
-  (load-progress [this callback])
-  (load-progress-for-puzzle [this id callback])
-  (save-auto! [this id progress callback])
-  (save-manual! [this id progress callback])
-  (solved! [this id solution callback]))
+  (load-all-puzzles-progress [this callback])
+  (load-puzzle-progress [this id callback])
+  (save-puzzle-progress [this id progress callback])
+  (mark-puzzle-solved [this id solution callback]))
 
 (defn to-str [data]
   (.stringify js/JSON (clj->js data)))
@@ -21,48 +20,44 @@
   (.setItem storage key (to-str data)))
 
 (defn- update-progress [storage id progress status]
-  (let [all (or (get-item storage "progressAll") {})]
+  (let [all (or (get-item storage "progressAll") {})
+        status (if (= (all id) "solved") :solved status)]
+    (log "update progress" id all status (all id))
     (set-item storage "progressAll" (assoc all id status)))
   (set-item storage id
             (if-let [existing (get-item storage  id)]
               (merge existing progress)
               progress)))
 
+(defn- keywordize-vals [board]
+  (mapv #(mapv keyword %) board))
+
+(defn- safe-call [callback result]
+  ((or callback identity) result))
+
 (extend-protocol Storage
   js/Storage
-  (load-progress [this callback]
-    (callback (get-item this "progressAll")))
-  (load-progress-for-puzzle [this id callback]
-    (callback (get-item this id)))
-  (save-auto! [this id progress callback]
-    (callback (update-progress this id {:auto progress} :in-progress)))
-  (save-manual! [this id progress callback]
-    (callback (update-progress this id {:manual progress} :in-progress)))
-  (solved! [this id solution callback]
-    (callback (update-progress this id {:solution solution} :solved))))
-
-(defn ^:export init []
-  (let [storage window/localStorage]
-    (load-progress storage log)
-
-    (log "Save auto mar")
-    (save-auto! storage "mar" {:left [[1] [2]] :top [[1]]} log)
-    (load-progress storage log)
-    (load-progress-for-puzzle storage "mar" log)
-
-    (log "Save auto asf")
-    (save-auto! storage "asf" {:left [[1] [2]] :top [[1]]} log)
-    (load-progress storage log)
-    (load-progress-for-puzzle storage "asf" log)
-
-    (log "Save manual mar")
-    (save-manual! storage "mar" {:left [[1] [2]] :top [[1]]} log)
-    (load-progress storage log)
-    (load-progress-for-puzzle storage "mar" log)
-
-    (log "Solving asf")
-    (solved! storage "asf" {:left [] :right []} log)
-    (load-progress storage log)
-    (load-progress-for-puzzle storage "asf" log)
-
-    ))
+  (load-all-puzzles-progress [this callback]
+    (safe-call callback (get-item this "progressAll")))
+  (load-puzzle-progress [this id callback]
+    (let [item (get-item this (keyword id))
+          item (if (and item (:auto item))
+                 (update-in item [:auto] keywordize-vals)
+                 item)]
+     (safe-call callback item)))
+  (save-puzzle-progress [this id progress callback]
+    (safe-call callback (update-progress this (keyword id) {:auto progress} :in-progress)))
+  (mark-puzzle-solved [this id solution callback]
+    (safe-call callback (update-progress this (keyword id)
+                                         {:auto nil
+                                          :solved? true}
+                                         :solved)))
+  nil
+  (load-all-puzzles-progress [this callback]
+    (safe-call callback {}))
+  (load-puzzle-progress [this id callback]
+    (safe-call callback nil))
+  (save-puzzle-progress [this id progress callback]
+    (safe-call callback nil))
+  (mark-puzzle-solved [this id solution callback]
+    (safe-call callback nil)))

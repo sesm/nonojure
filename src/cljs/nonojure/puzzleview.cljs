@@ -3,24 +3,13 @@
    [nonojure.navigation :refer [show-view]]
    [nonojure.dialog :as dialog]
    [nonojure.utils :refer [ajax log]]
+   [nonojure.storage :as stg]
    [dommy.utils :as utils]
    [dommy.core :as dommy :refer [listen! attr append!]]
    [cljs.core.async :refer [put! <! >! chan]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]
    [cljs.core.async.macros :only [go-loop]]))
-
-;(def test-data {:left [[] [1 2] [2] [4]]
-;                :top [[2] [1 1] [3] [2]]})
-;
-;(def test-result
-;  [:table#table.puzzle-table-non {:width 100 :height 100 :id "puzzle-table"}
-;  [:tr [:td]        [:td]        [:td]             [:td#.num 1]      [:td]             [:td]]
-;  [:tr [:td]        [:td]        [:td#.num 2]      [:td#.num 1]      [:td#.num 3]      [:td#.num 2]]
-;  [:tr [:td]        [:td]        [:td#.cell.c0.r0] [:td#.cell.c1.r0] [:td#.cell.c2.r0] [:td#.cell.c3.r0]]
-;  [:tr [:td#.num 1] [:td#.num 2] [:td#.cell.c0.r1] [:td#.cell.c1.r1] [:td#.cell.c2.r1] [:td#.cell.c3.r1]]
-;  [:tr [:td]        [:td#.num 2] [:td#.cell.c0.r2] [:td#.cell.c1.r2] [:td#.cell.c2.r2] [:td#.cell.c3.r2]]
-;  [:tr [:td]        [:td#.num 4] [:td#.cell.c0.r3] [:td#.cell.c1.r3] [:td#.cell.c2.r3] [:td#.cell.c3.r3]]])
 
 (defn range-inc [a b]
   (range (min a b) (inc (max a b))))
@@ -230,6 +219,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
     (if (and (not (:solved? state))
              valid?)
       (do (show-solved-div id)
+          (stg/mark-puzzle-solved (:storage state) id (:board state) nil)
           (assoc state :solved? true))
       state)))
 
@@ -316,12 +306,14 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
               :last-cell [x y]
               :board (change-cell-in-board (:board state) x y fill-style))))))))
 
-(defn stop-dragging [{:keys [fill-style base-cell last-cell board drag-type] :as state}]
-  (-> state
-      (assoc :board (if (and fill-style (= :rect drag-type))
-                      (update-region-of-board board base-cell last-cell fill-style)
-                      board))
-      (dissoc :fill-style :last-cell :base-cell)))
+(defn stop-dragging [{:keys [fill-style base-cell last-cell board drag-type puzzle storage] :as state}]
+  (let [new-board (if (and fill-style (= :rect drag-type))
+                    (update-region-of-board board base-cell last-cell fill-style)
+                    board)]
+    (stg/save-puzzle-progress storage (:id puzzle) new-board nil)
+    (-> state
+       (assoc :board new-board)
+       (dissoc :fill-style :last-cell :base-cell))))
 
 (defn cancel-dragging [{:keys [fill-style base-cell last-cell board] :as state}]
   (when fill-style
@@ -338,6 +330,15 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
         query (str "td[data-coord='" coord "']")]
     (doseq [el (sel query)]
       (dommy/toggle-class! el "num-clicked"))))
+
+(defn apply-progress [progress state]
+  (let [state (if (:solved? progress) (assoc state :solved? true) state)]
+   (if-let [saved-board (:auto progress)]
+     (let [width (count (first saved-board))
+           height (count saved-board)]
+       (update-cells-region-style! [0 0] [(dec width) (dec height)] (fn [x y] (get-in saved-board [y x])))
+       (assoc state :board saved-board))
+     state)))
 
 (defn add-handlers [event-chan]
   (let [add-event (fn [event-type] #(put! event-chan [% event-type]))]
@@ -364,6 +365,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                      :mouseenter-cell (handle-mouse-enter-on-cell evt state)
                      :mouseup-cell (check-solution (stop-dragging state))
                      :mouseleave-board (cancel-dragging state)
+                     :progress-loaded (check-solution (apply-progress evt state))
                      :number-click (do (handle-number-click evt) state)
                      :clear (do (clear-puzzle) initial-state)
                      :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
@@ -374,7 +376,8 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
   (when-let [solved (sel1 [:#puzzle :#solved])]
     (dommy/remove! solved))
-  (let [event-chan (chan 5)]
+  (let [event-chan (chan 5)
+        storage window/localStorage]
     (add-handlers event-chan)
     (handle-cell-events event-chan
                         {:fill-style nil
@@ -382,7 +385,9 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                          :last-cell nil
                          :drag-type :rect
                          :puzzle nono
-                         :board (init-board (count (:top nono)) (count (:left nono)))}))
+                         :storage storage
+                         :board (init-board (count (:top nono)) (count (:left nono)))})
+    (stg/load-puzzle-progress storage (:id nono) #(put! event-chan [% :progress-loaded])))
   (show-view :puzzle))
 
 (defn ^:export init [el]
