@@ -44,6 +44,11 @@
 [:.hidden {:display "none"}]
 
 [:#dialog
+    {:position "fixed"
+     :top 0
+     :right 0
+     :left 0
+     :bottom 0}
 
     [:.darkener
         {:background-color "#000"
