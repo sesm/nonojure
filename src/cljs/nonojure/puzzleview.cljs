@@ -275,6 +275,9 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
     2 :right
     :unknown))
 
+(defn save-state [{:keys [puzzle storage board]}]
+  (stg/save-puzzle-progress storage (:id puzzle) board nil))
+
 (defn handle-mouse-down-on-cell [evt state]
   (let [cell (.-target evt)
         style (new-cell-style-after-click cell (button evt))
@@ -309,11 +312,12 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 (defn stop-dragging [{:keys [fill-style base-cell last-cell board drag-type puzzle storage] :as state}]
   (let [new-board (if (and fill-style (= :rect drag-type))
                     (update-region-of-board board base-cell last-cell fill-style)
-                    board)]
-    (stg/save-puzzle-progress storage (:id puzzle) new-board nil)
-    (-> state
-       (assoc :board new-board)
-       (dissoc :fill-style :last-cell :base-cell))))
+                    board)
+        new-state (-> state
+                      (assoc :board new-board)
+                      (dissoc :fill-style :last-cell :base-cell))]
+    (save-state new-state)
+    new-state))
 
 (defn cancel-dragging [{:keys [fill-style base-cell last-cell board] :as state}]
   (when fill-style
@@ -367,7 +371,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                      :mouseleave-board (cancel-dragging state)
                      :progress-loaded (check-solution (apply-progress evt state))
                      :number-click (do (handle-number-click evt) state)
-                     :clear (do (clear-puzzle) initial-state)
+                     :clear (do (clear-puzzle) (save-state initial-state))
                      :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
                      (do (log "Unknown event:" event-type) state))]
      (recur (<! event-chan) new-state))))
