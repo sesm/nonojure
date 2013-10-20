@@ -58,7 +58,7 @@
 
         [:.item
             {:display "inline-block"
-             :width "80px"
+             :width "70px"
              :text-align "center"}]
 
         [:a

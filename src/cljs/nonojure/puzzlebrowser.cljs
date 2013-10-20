@@ -11,8 +11,6 @@
 
 (declare retrieve-thumbnails)
 
-(def num-cols 5)
-
 (def root (atom nil))
 
 (def difficulties {0 "not rated"
@@ -20,7 +18,7 @@
                    2 "medium"
                    3 "hard"})
 
-(def cell-size 6)
+(def cell-size 4)
 
 (defn draw-grid [thumbnail nono]
   (let [ctx (c/get-context (sel1 thumbnail :canvas) :2d)
@@ -47,8 +45,7 @@
     thumbnail))
 
 (deftemplate nono-thumbnail [nono]
-  (let [scale 20
-        width (:width nono)
+  (let [width (:width nono)
         height (:height nono)
         difficulty (Math/round (:difficulty nono))
         puzzle-id (:id nono)]
@@ -83,11 +80,7 @@
   (when-let [old (sel1 @root :#thumbnails)]
     (dommy/remove! old))
   (let [cells (for [nono nonos]
-                (-> nono nono-thumbnail (draw-grid nono)))
-        padded-cells (concat cells (repeat (dec num-cols) [:td ""]))
-        rows (partition num-cols padded-cells)
-        contents (for [row rows] [:tr row])
-        table [:table#table.puzzle-browser{:id "puzzle-browser" :border 1} contents]]
+                (-> nono nono-thumbnail (draw-grid nono)))]
     (dommy/append! @root [:div#thumbnails cells]))
   (reload-progress))
 
@@ -118,7 +111,7 @@
   [:div.filtering
    [:div.size [:p.type "Size"]
     [:div.item [:a.all.selected "all"]]
-    (for [value ["1-10" "11-20" "21-30"]]
+    (for [value ["1-10" "11-20" "21-30" "31-40" "41-50"]]
       [:div.item
        [:a.number-text {:data-filter "size"
                         :data-value value}
