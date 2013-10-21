@@ -76,7 +76,6 @@
     (dommy/remove-class! el class)))
 
 (defn apply-progress [progress]
-  (log progress)
   (remove-all-classes @root "in-progress")
   (remove-all-classes @root "solved")
   (doseq [[id progress] progress]

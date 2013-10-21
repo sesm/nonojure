@@ -1,5 +1,6 @@
 (ns nonojure.storage
-  (:require [nonojure.utils :refer [log]]))
+  (:require [nonojure.utils :refer [log]]
+            [nonojure.endec :refer [encode-board decode-board]]))
 
 (defprotocol Storage
   (load-progress [this ids callback])
@@ -18,21 +19,33 @@
 (defn set-item [storage key data]
   (.setItem storage key (to-str data)))
 
-(defn- update-progress [storage id progress status]
-  (let [old-item (or (get-item storage id) {})
-        status (if (= (:status old-item) "solved") :solved status)]
-    (set-item storage id (merge old-item progress {:status status}))))
-
-(defn- keywordize-vals [board]
-  (mapv #(mapv keyword %) board))
-
-(defn- keywordize-boards [progress & boards]
-  (reduce (fn [progress board]
-            (if (progress board)
-              (update-in progress [board] keywordize-vals)
+(defn encode-boards [progress]
+  (reduce (fn [progress type]
+            (if-let [board (progress type)]
+              (assoc progress
+                type (encode-board board)
+                :width (count (first board)))
               progress))
           progress
-          boards))
+          [:auto :solution]))
+
+(defn decode-boards [progress]
+  (let [width (:width progress)]
+    (reduce (fn [progress type]
+              (if-let [board (progress type)]
+                (assoc progress
+                  type (decode-board board width))
+                progress))
+            progress
+            [:auto :solution])))
+
+(defn- update-progress [storage id progress status]
+  (let [old-item (or (get-item storage id) {})
+        status (if (= (:status old-item) "solved") :solved status)
+        new-item (merge old-item
+                        (encode-boards progress)
+                        {:status status})]
+    (set-item storage id new-item)))
 
 (defn- safe-call [callback result]
   ((or callback identity) result))
@@ -42,7 +55,7 @@
   (load-progress [this ids callback]
     (let [load-single-puzzle (fn [id]
                                (if-let [item (get-item this (keyword id))]
-                                 (keywordize-boards item :auto :solution)
+                                 (decode-boards item)
                                  nil))
           items (into {} (for [id ids
                                :let [item (load-single-puzzle id)]
