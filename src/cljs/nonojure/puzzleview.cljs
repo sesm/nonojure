@@ -381,7 +381,8 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   (when-let [solved (sel1 [:#puzzle :#solved])]
     (dommy/remove! solved))
   (let [event-chan (chan 5)
-        storage window/localStorage]
+        storage window/localStorage
+        id (:id nono)]
     (add-handlers event-chan)
     (handle-cell-events event-chan
                         {:fill-style nil
@@ -391,7 +392,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                          :puzzle nono
                          :storage storage
                          :board (init-board (count (:top nono)) (count (:left nono)))})
-    (stg/load-puzzle-progress storage (:id nono) #(put! event-chan [% :progress-loaded])))
+    (stg/load-progress storage [id] #(put! event-chan [(% id) :progress-loaded])))
   (show-view :puzzle))
 
 (defn ^:export init [el]

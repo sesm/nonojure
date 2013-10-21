@@ -2,8 +2,7 @@
   (:require [nonojure.utils :refer [log]]))
 
 (defprotocol Storage
-  (load-all-puzzles-progress [this callback])
-  (load-puzzle-progress [this id callback])
+  (load-progress [this ids callback])
   (save-puzzle-progress [this id progress callback])
   (mark-puzzle-solved [this id solution callback]))
 
@@ -20,43 +19,46 @@
   (.setItem storage key (to-str data)))
 
 (defn- update-progress [storage id progress status]
-  (let [all (or (get-item storage "progressAll") {})
-        status (if (= (all id) "solved") :solved status)]
-    (log "update progress" id all status (all id))
-    (set-item storage "progressAll" (assoc all id status)))
-  (set-item storage id
-            (if-let [existing (get-item storage  id)]
-              (merge existing progress)
-              progress)))
+  (let [old-item (or (get-item storage id) {})
+        status (if (= (:status old-item) "solved") :solved status)]
+    (set-item storage id (merge old-item progress {:status status}))))
 
 (defn- keywordize-vals [board]
   (mapv #(mapv keyword %) board))
+
+(defn- keywordize-boards [progress & boards]
+  (reduce (fn [progress board]
+            (if (progress board)
+              (update-in progress [board] keywordize-vals)
+              progress))
+          progress
+          boards))
 
 (defn- safe-call [callback result]
   ((or callback identity) result))
 
 (extend-protocol Storage
   js/Storage
-  (load-all-puzzles-progress [this callback]
-    (safe-call callback (get-item this "progressAll")))
-  (load-puzzle-progress [this id callback]
-    (let [item (get-item this (keyword id))
-          item (if (and item (:auto item))
-                 (update-in item [:auto] keywordize-vals)
-                 item)]
-     (safe-call callback item)))
+  (load-progress [this ids callback]
+    (let [load-single-puzzle (fn [id]
+                               (if-let [item (get-item this (keyword id))]
+                                 (keywordize-boards item :auto :solution)
+                                 nil))
+          items (into {} (for [id ids
+                               :let [item (load-single-puzzle id)]
+                               :when item]
+                           [id item]))]
+     (safe-call callback items)))
   (save-puzzle-progress [this id progress callback]
     (safe-call callback (update-progress this (keyword id) {:auto progress} :in-progress)))
   (mark-puzzle-solved [this id solution callback]
     (safe-call callback (update-progress this (keyword id)
                                          {:auto nil
-                                          :solved? true}
+                                          :solution solution}
                                          :solved)))
   nil
-  (load-all-puzzles-progress [this callback]
+  (load-progress [this ids callback]
     (safe-call callback {}))
-  (load-puzzle-progress [this id callback]
-    (safe-call callback nil))
   (save-puzzle-progress [this id progress callback]
     (safe-call callback nil))
   (mark-puzzle-solved [this id solution callback]

@@ -20,10 +20,12 @@
 
 (def cell-size 4)
 
-(defn draw-grid [thumbnail nono]
-  (let [ctx (c/get-context (sel1 thumbnail :canvas) :2d)
-        width (:width nono)
-        height (:height nono)]
+(defn draw-grid [thumbnail width height board-state]
+  (let [ctx (c/get-context (sel1 thumbnail :canvas) :2d)]
+    (c/clear-rect ctx {:x 0
+                       :y 0
+                       :w (* width cell-size)
+                       :h (* height cell-size)} )
     (c/translate ctx (/ cell-size 2) (/ cell-size 2))
     (c/stroke-width ctx 0.3)
     (doseq [x (range 0 width)
@@ -42,6 +44,16 @@
                           :y (* y cell-size)
                           :w (* 5 cell-size)
                           :h (* 5 cell-size)}))
+    (when board-state
+      (doseq [x (range width)
+              y (range height)
+                :when (= :filled (get-in board-state [y x]))]
+        (c/fill-rect ctx {:x (* x cell-size)
+                          :y (* y cell-size)
+                          :w cell-size
+                          :h cell-size})))
+    (c/translate ctx (/ cell-size -2) (/ cell-size -2))
+
     thumbnail))
 
 (deftemplate nono-thumbnail [nono]
@@ -64,23 +76,25 @@
     (dommy/remove-class! el class)))
 
 (defn apply-progress [progress]
-  (log "total progress" progress)
+  (log progress)
   (remove-all-classes @root "in-progress")
   (remove-all-classes @root "solved")
-  (when progress
-    (doseq [[id state] progress]
-      (let [query (str ".thumbnail[data-id='" (name id) "']")]
-        (when-let [thumbnail (sel1 @root query)]
-         (dommy/add-class! thumbnail state))))))
+  (doseq [[id progress] progress]
+    (let [query (str ".thumbnail[data-id='" (name id) "']")]
+      (when-let [thumbnail (sel1 @root query)]
+        (dommy/add-class! thumbnail (:status progress))
+        (when-let [state (or (:auto progress) (:solution progress))]
+          (draw-grid thumbnail (count (first state)) (count state) state))))))
 
 (defn- reload-progress []
-  (stg/load-all-puzzles-progress window/localStorage apply-progress))
+  (let [ids (map #(dommy/attr % :data-id) (sel @root :.thumbnail))]
+   (stg/load-progress window/localStorage ids apply-progress)))
 
 (defn create-thumbnails [nonos]
   (when-let [old (sel1 @root :#thumbnails)]
     (dommy/remove! old))
   (let [cells (for [nono nonos]
-                (-> nono nono-thumbnail (draw-grid nono)))]
+                (-> nono nono-thumbnail (draw-grid (:width nono) (:height nono) nil)))]
     (dommy/append! @root [:div#thumbnails cells]))
   (reload-progress))
 

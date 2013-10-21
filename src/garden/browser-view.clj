@@ -43,11 +43,7 @@
 
         [:&.solved
 
-            [:.description:before {:content "url('/static/img/solved.png')"}]]
-
-        [:&.in-progress
-
-            [:.description:before {:content "url('/static/img/in-progress.png')"}]]]
+            [:.description:before {:content "url('/static/img/solved.png')"}]]]
 
     [:.filtering
         {:width "500px"
