@@ -101,7 +101,9 @@
             {:font-size "30px"
              :margin "10px 0px"}]
 
-        [:.invitation {:font-size "20px"}]
+        [:.invitation
+            {:font-size "20px"
+             :margin-bottom "5px"}]
 
         [:.choices
 
