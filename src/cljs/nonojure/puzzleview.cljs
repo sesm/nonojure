@@ -4,9 +4,10 @@
    [nonojure.dialog :as dialog]
    [nonojure.utils :refer [ajax log]]
    [nonojure.storage :as stg]
+   [nonojure.pubsub :refer [subscribe publish]]
    [dommy.utils :as utils]
    [dommy.core :as dommy :refer [listen! attr append!]]
-   [cljs.core.async :refer [put! <! >! chan]])
+   [cljs.core.async :refer [put! <! >! chan close!]])
   (:use-macros
    [dommy.macros :only [node sel sel1]]
    [cljs.core.async.macros :only [go-loop]]))
@@ -336,69 +337,90 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
       (dommy/toggle-class! el "num-clicked"))))
 
 (defn apply-progress [progress state]
-  (let [state (if (= (keyword (:status progress)) :solved) (assoc state :solved? true) state)]
-   (if-let [saved-board (or (:auto progress) (:solution progress))]
-     (let [width (count (first saved-board))
-           height (count saved-board)]
-       (update-cells-region-style! [0 0] [(dec width) (dec height)] (fn [x y] (get-in saved-board [y x])))
-       (assoc state :board saved-board))
-     state)))
+  (when-let [progress (progress (get-in state [:puzzle :id]))]
+   (let [state (if (= (keyword (:status progress)) :solved) (assoc state :solved? true) state)]
+     (if-let [saved-board (or (:auto progress) (:solution progress))]
+       (let [width (count (first saved-board))
+             height (count saved-board)]
+         (update-cells-region-style! [0 0] [(dec width) (dec height)] (fn [x y] (get-in saved-board [y x])))
+         (assoc state :board saved-board))
+       state))))
 
-(defn add-handlers [event-chan]
-  (let [add-event (fn [event-type] #(put! event-chan [% event-type]))]
-    (listen! [(sel1 :#puzzle-table) :.cell]
+(defn add-handlers [event-chan root]
+  (let [add-event (fn [event-type] #(put! event-chan [event-type %]))
+        table (sel1 root :#puzzle-table)]
+    (listen! [table :.cell]
              :mousedown (add-event :mousedown-cell)
              :contextmenu disable-context-menu
              :mouseenter (add-event :mouseenter-cell))
-    (listen! (sel1 :#puzzle-table)
+    (listen! table
              :mouseup (add-event :mouseup-cell)
              :mouseleave (add-event :mouseleave-board))
-    (listen! [(sel1 :#puzzle-table) "td:not(.cell)"]
+    (listen! [table "td:not(.cell)"]
              :mouseenter (add-event :mouseleave-drawing-board))
-    (listen! [(sel1 :#puzzle-table) :.num]
+    (listen! [table :.num]
              :mousedown (add-event :number-click)
              :contextmenu disable-context-menu)
-    (listen! (sel1 :#button-clear) :click (add-event :clear))))
+    (listen! (sel1 root :#button-clear) :click (add-event :clear))))
 
-(defn handle-cell-events [event-chan initial-state]
+(defn create-state [storage root puzzle]
+  {:fill-style nil
+   :base-cell nil
+   :last-cell nil
+   :drag-type :rect
+   :puzzle puzzle
+   :view root
+   :storage storage
+   :board (init-board (count (:top puzzle)) (count (:left puzzle)))})
+
+(defn clear-state [state]
+  (create-state (:storage state) (:view state) (:puzzle state)))
+
+(defn handle-puzzle-events [event-chan]
   (go-loop
-   [[evt event-type] (<! event-chan)
-    state initial-state]
-   (let [new-state (case event-type
-                     :mousedown-cell (handle-mouse-down-on-cell evt state)
-                     :mouseenter-cell (handle-mouse-enter-on-cell evt state)
-                     :mouseup-cell (check-solution (stop-dragging state))
-                     :mouseleave-board (cancel-dragging state)
-                     :progress-loaded (check-solution (apply-progress evt state))
-                     :number-click (do (handle-number-click evt) state)
-                     :clear (do (clear-puzzle) (save-state initial-state))
-                     :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
-                     (do (log "Unknown event:" event-type) state))]
-     (recur (<! event-chan) new-state))))
+   [[event-type data] (<! event-chan)
+    state nil]
+   (when-not (nil? event-type) ; nil - channel is closed
+     (let [new-state (case event-type
+                       :mousedown-cell (handle-mouse-down-on-cell data state)
+                       :mouseenter-cell (handle-mouse-enter-on-cell data state)
+                       :mouseup-cell (check-solution (stop-dragging state))
+                       :mouseleave-board (cancel-dragging state)
+                       :progress-loaded (check-solution (apply-progress data state))
+                       :number-click (do (handle-number-click data) state)
+                       :clear (let [cleared-state (clear-state state)]
+                                (clear-puzzle)
+                                (save-state cleared-state)
+                                cleared-state)
+                       :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
+                       :new-state (do (add-handlers event-chan (:view data))
+                                      data)
+                       (do (log "Unknown event:" event-type) state))]
+       (recur (<! event-chan) new-state)))))
 
-(defn show [nono]
-  (dommy/replace! (sel1 :#puzzle-table) (create-template nono))
-  (when-let [solved (sel1 [:#puzzle :#solved])]
-    (dommy/remove! solved))
-  (let [event-chan (chan 5)
-        storage window/localStorage
-        id (:id nono)]
-    (add-handlers event-chan)
-    (handle-cell-events event-chan
-                        {:fill-style nil
-                         :base-cell nil
-                         :last-cell nil
-                         :drag-type :rect
-                         :puzzle nono
-                         :storage storage
-                         :board (init-board (count (:top nono)) (count (:left nono)))})
-    (stg/load-progress storage [id] #(put! event-chan [(% id) :progress-loaded])))
+(defn start-async-loop []
+  (let [event-chan (chan 5)]
+    (handle-puzzle-events event-chan)
+    (subscribe :new-puzzle #(put! event-chan [:new-state %]))
+    (subscribe :puzzle-progress #(put! event-chan [:progress-loaded %]))))
+
+(defn show [root nono]
+  (doto root
+    dommy/clear!
+    (append! [:div.button-container
+              [:p.button#button-clear "clear"]])
+    (append! [:div#puzzle-view.center (create-template nono)]))
+  (let [storage window/localStorage]
+    (publish :new-puzzle (create-state storage root nono))
+    (stg/load-progress storage [(:id nono)] #(publish :puzzle-progress %)))
   (show-view :puzzle))
 
-(defn ^:export init [el]
-  (dommy/add-class! el "center")
-  (append! el [:div.button-container
-               [:p.button#button-clear "clear"]])
-  (append! el [:div#puzzle-view.center [:div#puzzle-table]])
-  (show {:left [[5] [5] [5] [5] [5]]
-         :top [[5] [5] [5] [5] [5]]}))
+(defn load-and-show-puzzle [root id]
+  (let [url (str "/api/nonograms/" id)]
+    (ajax url #(do (show root %)
+                   (.scrollTo js/window 0 0)))))
+
+(defn ^:export init [root]
+  (dommy/add-class! root "center")
+  (start-async-loop)
+  (subscribe :user-clicked-puzzle-in-browser #(load-and-show-puzzle root %)))

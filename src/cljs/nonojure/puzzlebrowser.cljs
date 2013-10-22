@@ -4,6 +4,7 @@
    [nonojure.utils :refer [ajax log]]
    [nonojure.storage :as stg]
    [nonojure.navigation :as nav]
+   [nonojure.pubsub :refer [subscribe publish]]
    [monet.canvas :as c]
    [clojure.string :refer [join]])
   (:use-macros
@@ -45,6 +46,7 @@
                           :w (* 5 cell-size)
                           :h (* 5 cell-size)}))
     (when board-state
+      (c/stroke-width ctx 0.1)
       (doseq [x (range width)
               y (range height)
                 :when (= :filled (get-in board-state [y x]))]
@@ -152,14 +154,12 @@
   (dommy/listen! [@root :.thumbnail] :click
     (fn [event]
       (let [thumb (.-selectedTarget event)
-            id (dommy/attr thumb :data-id)
-            url (str "/api/nonograms/" id)]
-        (ajax url #(do (nonojure.puzzleview/show %)
-                       (.scrollTo js/window 0 0)))))))
+            id (dommy/attr thumb :data-id)]
+        (publish :user-clicked-puzzle-in-browser id)))))
 
 (defn ^:export init [el]
   (reset! root el)
   (dommy/append! @root (add-filtering-listener (filtering)))
   (add-thumbnail-listener)
   (reload-thumbnails)
-  (nav/on-show :browser reload-progress))
+  (subscribe :show-browser reload-progress))

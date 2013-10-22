@@ -16,7 +16,7 @@
                  [com.novemberain/monger "1.5.0"]
                  [org.clojure/tools.reader "0.7.8"]
 
-                 [prismatic/dommy "0.1.1"]
+                 [prismatic/dommy "0.1.2"]
                  [rm-hull/monet "0.1.9"]]
   :main nonojure.runner
   :aot [nonojure.runner]
