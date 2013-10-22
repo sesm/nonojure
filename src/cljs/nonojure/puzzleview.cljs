@@ -336,8 +336,8 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
       (dommy/toggle-class! el "num-clicked"))))
 
 (defn apply-progress [progress state]
-  (let [state (if (:solved? progress) (assoc state :solved? true) state)]
-   (if-let [saved-board (:auto progress)]
+  (let [state (if (= (keyword (:status progress)) :solved) (assoc state :solved? true) state)]
+   (if-let [saved-board (or (:auto progress) (:solution progress))]
      (let [width (count (first saved-board))
            height (count saved-board)]
        (update-cells-region-style! [0 0] [(dec width) (dec height)] (fn [x y] (get-in saved-board [y x])))
