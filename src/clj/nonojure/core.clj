@@ -38,13 +38,13 @@
            {:status 500}))))
 
 (defroutes app-routes
-  (GET "/" [] (file-response "resources/index.html"))
   (GET "/api-examples" [] (file-response "resources/api-examples.html"))
   (GET "/rating" [] (file-response "resources/rating.html"))
   (context "/api" [] (-> api
                          (wrap-error)
                          (wrap-json-response {:pretty true})))
   (croute/resources "/static")
+  (GET "*" [] (file-response "resources/index.html"))
   (croute/not-found "Nothing to see here, move along."))
 
 (defn wrap-logging [handler]

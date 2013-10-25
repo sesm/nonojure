@@ -5,8 +5,10 @@
    [nonojure.storage :as stg]
    [nonojure.navigation :as nav]
    [nonojure.pubsub :refer [subscribe publish]]
+   [nonojure.url :refer [go-overwrite-history]]
    [monet.canvas :as c]
-   [clojure.string :refer [join]])
+   [clojure.string :refer [join]]
+   [clojure.set :refer [map-invert]])
   (:use-macros
    [dommy.macros :only [sel sel1 deftemplate]]))
 
@@ -14,10 +16,14 @@
 
 (def root (atom nil))
 
-(def difficulties {0 "not rated"
-                   1 "easy"
-                   2 "medium"
-                   3 "hard"})
+(def difc-int->str {0 "not rated"
+                    1 "easy"
+                    2 "medium"
+                    3 "hard"})
+
+(def difc-str->int (map-invert difc-int->str))
+
+
 
 (def cell-size 4)
 
@@ -71,7 +77,7 @@
                  :height (* (inc height) cell-size)}]]]
      [:div.description
       [:p.size.number-text (str width "×" height)]
-      [:p.difficulty (difficulties difficulty)]]]))
+      [:p.difficulty (difc-int->str difficulty)]]]))
 
 (defn- remove-all-classes [root class]
   (doseq [el (sel root (str "." class))]
@@ -99,67 +105,101 @@
     (dommy/append! @root [:div#thumbnails cells]))
   (reload-progress))
 
-(defn retrieve-thumbnails [{:keys [filter value sort order]}]
-  (let [filter-clauses (if filter [["filter" filter]
-                                   ["value" value]]
-                           [])
+
+(defn build-query-str [{:keys [filter value sort order]} for-api?]
+  (let [value (if (and (= filter "difficulty") for-api? (not= value "all"))
+                (let [num-val (difc-str->int value)]
+                  (str (- num-val 0.5) "-" (+ num-val 0.499)))
+                value)
+        filter-clauses (if (or (not= value "all")
+                               (not for-api?))
+                         [["filter" filter]
+                          ["value" value]]
+                         [])
         sort-clauses (if sort [["sort" sort]
                               ["order" order]]
-                        [])
-        clauses-str (->> (concat filter-clauses sort-clauses)
-                         (map #(join "=" %))
-                         (join "&"))
-        url (str "/api/nonograms" (if (empty? clauses-str) "" "?") clauses-str)]
+                        [])]
+    (->> (concat filter-clauses sort-clauses)
+         (map #(join "=" %))
+         (join "&"))))
+
+(defn retrieve-thumbnails [params]
+  (let [query (build-query-str params true)
+        url (str "/api/nonograms" (if (empty? query) "" "?") query)]
     (log "Sending" url)
     (ajax url create-thumbnails)))
 
-(defn reload-thumbnails []
-  (let [selected (sel1 @root :.selected)
-        clause {:filter (dommy/attr selected :data-filter)
-                :value (dommy/attr selected :data-value)
+(defn get-browser-url [selected]
+  (let [clause {:filter (if selected
+                          (dommy/attr selected :data-filter)
+                          "size")
+                :value (if selected
+                         (dommy/attr selected :data-value)
+                         "all")
                 :sort "size"
                 :order "asc"}]
-    (retrieve-thumbnails clause)))
+    (str "browser?" (build-query-str clause false))))
+
+(defn selected-button [root]
+  (sel1 root [:.filtering :.selected]))
+
+(defn set-criteria-button-selected
+  "Sets criteria (text button) on a screen selected according to query.
+E.g. {:filter \"size\" :value \"1-10\"} will set button \"1-10\" selected.
+Returns true if button was switched to selected mode and false button already selected"
+  [root query]
+  (let [{:keys [filter value]} query
+        button (sel1 root [(str "." filter) (str "[data-value='" value "']")])]
+    (if-not (dommy/has-class? button "selected")
+      (do (when-let [selected (selected-button root)]
+            (dommy/remove-class! selected "selected"))
+          (dommy/add-class! button "selected")
+          true)
+      false)))
 
 
 (deftemplate filtering []
   [:div.filtering
    [:div.size [:p.type "Size"]
-    [:div.item [:a.all.selected "all"]]
-    (for [value ["1-10" "11-20" "21-30" "31-40" "41-50"]]
+    (for [value ["all" "1-10" "11-20" "21-30" "31-40" "41-50"]]
       [:div.item
        [:a.number-text {:data-filter "size"
                         :data-value value}
         value]])]
    [:div.difficulty [:p.type "Difficulty"]
-    [:div.item [:a.all "all"]]
-    (for [value [1 2 3]]
+    (for [value ["all" "easy" "medium" "hard"]]
       [:div.item
        [:a {:data-filter "difficulty"
-            :data-value (str (- value 0.5) "-" (+ value 0.499))}
-        (difficulties value)]] )]])
+            :data-value value}
+        value]] )]])
 
 (defn add-filtering-listener [filter-div]
   (dommy/listen! [filter-div :a] :click
     (fn [event]
       (let [a (.-selectedTarget event)]
-        (when-not (dommy/has-class? a "selected")
-          (-> (sel1 filter-div :.selected)
-              (dommy/remove-class! "selected"))
-          (dommy/add-class! a "selected")
-          (reload-thumbnails )))))
+        (go-overwrite-history (get-browser-url a)))))
   filter-div)
 
-(defn add-thumbnail-listener []
-  (dommy/listen! [@root :.thumbnail] :click
+(defn add-thumbnail-listener [root]
+  (dommy/listen! [root :.thumbnail] :click
     (fn [event]
       (let [thumb (.-selectedTarget event)
             id (dommy/attr thumb :data-id)]
         (publish :user-clicked-puzzle-in-browser id)))))
 
+(defn url-changed [root url]
+  (when (or(= (:path url) "browser")
+           (= (:path url) ""))
+    (if (empty? (:query url))
+      (go-overwrite-history (get-browser-url (selected-button root)))
+      (if (set-criteria-button-selected root (:query url))
+        (do (retrieve-thumbnails (:query url))
+            (nav/set-url-for-view :browser (get-browser-url (selected-button root))))
+        (reload-progress)))))
+
 (defn ^:export init [el]
   (reset! root el)
-  (dommy/append! @root (add-filtering-listener (filtering)))
-  (add-thumbnail-listener)
-  (reload-thumbnails)
-  (subscribe :show-browser reload-progress))
+  (dommy/append! el (add-filtering-listener (filtering)))
+  (add-thumbnail-listener @root)
+  (subscribe :show-browser reload-progress)
+  (subscribe :url-changed #(url-changed @root %)))

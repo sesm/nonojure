@@ -3,11 +3,16 @@
    [dommy.core :as dommy
                :refer [append!]]
    [nonojure.utils :refer [log]]
-   [nonojure.pubsub :refer [publish]])
+   [nonojure.url :refer [go]])
   (:use-macros
    [dommy.macros :only [sel sel1 deftemplate]]))
 
-(defn add-view [view tab-text]
+(def urls (atom {}))
+
+(defn set-url-for-view [view url]
+  (swap! urls assoc view url))
+
+(defn add-view [view tab-text url]
   (let [view (name view)
         tab [:div {:id (str view "-tab")
                    :class "tab-button"
@@ -16,7 +21,8 @@
         view-div [:div {:id view
                         :class "hidden"}]]
     (append! (sel1 :#navigation) tab)
-    (append! (sel1 :#views) view-div)))
+    (append! (sel1 :#views) view-div))
+  (set-url-for-view view url))
 
 (defn- hide-view [tab]
   (let [view (->> (dommy/attr tab :data-view-id)
@@ -30,20 +36,18 @@
     (hide-view active-tab))
   (let [view (if (keyword? view) (name view) (str view))]
     (dommy/add-class! (sel1 (str "#" view "-tab")) "active")
-    (dommy/remove-class! (sel1 (str "#" view)) "hidden"))
-  (let [topic (->> (name view)
-                   (str "show-")
-                   keyword)]
-   (publish topic)))
+    (dommy/remove-class! (sel1 (str "#" view)) "hidden")))
 
 (defn- on-tab-click [evt]
-  (let [view (.-target evt)]
-    (when-not (dommy/has-class? view "active")
-      (show-view (keyword (dommy/attr view :data-view-id))))))
-
+  (let [tab (.-target evt)
+        view (keyword (dommy/attr tab :data-view-id))]
+    (when-not (dommy/has-class? tab "active")
+      (when-let [url (@urls view)]
+        (go url)
+        (show-view view)))))
 
 (defn ^:export init []
-  (add-view :browser "browse")
-  (add-view :puzzle "current")
+  (add-view :browser "browse" "browse")
+  (add-view :puzzle "current" "puzzle")
   (show-view :browser)
   (dommy/listen! [(sel1 :#navigation) :.tab-button] :click on-tab-click))
