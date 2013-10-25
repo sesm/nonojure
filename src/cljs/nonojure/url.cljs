@@ -44,7 +44,5 @@
 
   (.listen goog.events history (.-NAVIGATE goog.history.EventType) url-changed)
 
-  (.setEnabled history true)
-
-)
+  (.setEnabled history true))
 

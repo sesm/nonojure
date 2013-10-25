@@ -5,7 +5,7 @@
    [nonojure.storage :as stg]
    [nonojure.navigation :as nav]
    [nonojure.pubsub :refer [subscribe publish]]
-   [nonojure.url :refer [go-overwrite-history]]
+   [nonojure.url :refer [go-overwrite-history go]]
    [monet.canvas :as c]
    [clojure.string :refer [join]]
    [clojure.set :refer [map-invert]])
@@ -138,7 +138,7 @@
                          "all")
                 :sort "size"
                 :order "asc"}]
-    (str "browser?" (build-query-str clause false))))
+    (str "browse?" (build-query-str clause false))))
 
 (defn selected-button [root]
   (sel1 root [:.filtering :.selected]))
@@ -171,7 +171,7 @@ Returns true if button was switched to selected mode and false button already se
       [:div.item
        [:a {:data-filter "difficulty"
             :data-value value}
-        value]] )]])
+        value]])]])
 
 (defn add-filtering-listener [filter-div]
   (dommy/listen! [filter-div :a] :click
@@ -185,17 +185,18 @@ Returns true if button was switched to selected mode and false button already se
     (fn [event]
       (let [thumb (.-selectedTarget event)
             id (dommy/attr thumb :data-id)]
-        (publish :user-clicked-puzzle-in-browser id)))))
+        (go (str "nonogram/" id))))))
 
 (defn url-changed [root url]
-  (when (or(= (:path url) "browser")
+  (when (or(= (:path url) "browse")
            (= (:path url) ""))
     (if (empty? (:query url))
       (go-overwrite-history (get-browser-url (selected-button root)))
       (if (set-criteria-button-selected root (:query url))
         (do (retrieve-thumbnails (:query url))
             (nav/set-url-for-view :browser (get-browser-url (selected-button root))))
-        (reload-progress)))))
+        (reload-progress)))
+    (nav/show-view :browser)))
 
 (defn ^:export init [el]
   (reset! root el)

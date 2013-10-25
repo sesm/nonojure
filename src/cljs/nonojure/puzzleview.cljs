@@ -1,6 +1,6 @@
 (ns nonojure.puzzleview
   (:require
-   [nonojure.navigation :refer [show-view]]
+   [nonojure.navigation :refer [show-view set-url-for-view]]
    [nonojure.dialog :as dialog]
    [nonojure.utils :refer [ajax log]]
    [nonojure.storage :as stg]
@@ -376,10 +376,25 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 (defn clear-state [state]
   (create-state (:storage state) (:view state) (:puzzle state)))
 
-(defn handle-puzzle-events [event-chan]
+(defn show [root nono event-chan]
+  (doto root
+    (append! [:div.button-container
+              [:p.button#button-clear "clear"]])
+    (append! [:div#puzzle-view.center (create-template nono)]))
+  (let [storage window/localStorage]
+    (put! event-chan [:new-state (create-state storage root nono)])
+    (stg/load-progress storage [(:id nono)] #(put! event-chan [:progress-loaded %]))))
+
+(defn load-puzzle [id view event-chan]
+  (dommy/clear! view)
+  (let [url (str "/api/nonograms/" id)]
+    (ajax url #(do (show view % event-chan)
+                   (.scrollTo js/window 0 0)))))
+
+(defn handle-puzzle-events [view event-chan]
   (go-loop
    [[event-type data] (<! event-chan)
-    state nil]
+    state {:view view}]
    (when-not (nil? event-type) ; nil - channel is closed
      (let [new-state (case event-type
                        :mousedown-cell (handle-mouse-down-on-cell data state)
@@ -395,32 +410,24 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                        :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
                        :new-state (do (add-handlers event-chan (:view data))
                                       data)
+                       :puzzle-requested (do (when-not (= (get-in state [:puzzle :id]) data)
+                                               (load-puzzle data (:view state) event-chan))
+                                             (show-view :puzzle)
+                                             state)
                        (do (log "Unknown event:" event-type) state))]
        (recur (<! event-chan) new-state)))))
 
-(defn start-async-loop []
+(defn url-changed [url event-chan]
+  (when (re-matches #"nonogram(/[a-zA-Z0-9]*)?" (:path url))
+    (set-url-for-view :puzzle (:path url))
+    (if-let [id (re-find #"[a-zA-Z0-9]+" (subs (:path url) (count "nonogram")))]
+      (put! event-chan [:puzzle-requested id]))))
+
+(defn start-async-loop [view]
   (let [event-chan (chan 5)]
-    (handle-puzzle-events event-chan)
-    (subscribe :new-puzzle #(put! event-chan [:new-state %]))
-    (subscribe :puzzle-progress #(put! event-chan [:progress-loaded %]))))
-
-(defn show [root nono]
-  (doto root
-    dommy/clear!
-    (append! [:div.button-container
-              [:p.button#button-clear "clear"]])
-    (append! [:div#puzzle-view.center (create-template nono)]))
-  (let [storage window/localStorage]
-    (publish :new-puzzle (create-state storage root nono))
-    (stg/load-progress storage [(:id nono)] #(publish :puzzle-progress %)))
-  (show-view :puzzle))
-
-(defn load-and-show-puzzle [root id]
-  (let [url (str "/api/nonograms/" id)]
-    (ajax url #(do (show root %)
-                   (.scrollTo js/window 0 0)))))
+    (handle-puzzle-events view event-chan)
+    (subscribe :url-changed #(url-changed % event-chan))))
 
 (defn ^:export init [root]
   (dommy/add-class! root "center")
-  (start-async-loop)
-  (subscribe :user-clicked-puzzle-in-browser #(load-and-show-puzzle root %)))
+  (start-async-loop root))
