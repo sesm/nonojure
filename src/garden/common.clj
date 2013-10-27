@@ -43,6 +43,10 @@
 
 [:.hidden {:display "none"}]
 
+[:#ajax-indicator {:visibility "hidden"}
+
+    [:&.visible {:visibility "visible"}]]
+
 [:#dialog
     {:position "fixed"
      :top 0

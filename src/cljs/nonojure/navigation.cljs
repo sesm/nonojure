@@ -46,8 +46,12 @@
         (go url)
         (show-view view)))))
 
+(defn add-ajax-indicator []
+  (append! (sel1 :#navigation) [:img#ajax-indicator
+                                {:src "/static/img/ajax-loader.gif"}]))
+
 (defn ^:export init []
   (add-view :browser "browse" "browse")
-  (add-view :puzzle "current" "puzzle")
-  (show-view :browser)
+  (add-view :puzzle "current" "nonogram")
+  (add-ajax-indicator)
   (dommy/listen! [(sel1 :#navigation) :.tab-button] :click on-tab-click))
