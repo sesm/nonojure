@@ -89,6 +89,11 @@
 
     [:td.highlighted {:background-color light-yellow}]]
 
+    [:.no-puzzle
+        {:text-align "center"
+         :font-size "23px"
+         :margin-top "30px"}]
+
 [:#dialog
 
     [:#solved

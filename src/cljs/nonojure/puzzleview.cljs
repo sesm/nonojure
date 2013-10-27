@@ -417,16 +417,23 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                        (do (log "Unknown event:" event-type) state))]
        (recur (<! event-chan) new-state)))))
 
-(defn url-changed [url event-chan]
+(defn add-no-puzzle-message [view]
+  (doto view
+    (dommy/clear!)
+    (dommy/append! [:div.no-puzzle "Please select nonogram in \"browse\" tab."]))
+  (show-view :puzzle))
+
+(defn url-changed [url event-chan view]
   (when (re-matches #"nonogram(/[a-zA-Z0-9]*)?" (:path url))
     (set-url-for-view :puzzle (:path url))
     (if-let [id (re-find #"[a-zA-Z0-9]+" (subs (:path url) (count "nonogram")))]
-      (put! event-chan [:puzzle-requested id]))))
+      (put! event-chan [:puzzle-requested id])
+      (add-no-puzzle-message view))))
 
 (defn start-async-loop [view]
   (let [event-chan (chan 5)]
     (handle-puzzle-events view event-chan)
-    (subscribe :url-changed #(url-changed % event-chan))))
+    (subscribe :url-changed #(url-changed % event-chan view))))
 
 (defn ^:export init [root]
   (dommy/add-class! root "center")

@@ -161,7 +161,11 @@ Returns true if button was switched to selected mode and false button already se
 (deftemplate filtering []
   [:div.filtering
    [:div.size [:p.type "Size"]
-    (for [value ["all" "1-10" "11-20" "21-30" "31-40" "41-50"]]
+    [:div.item
+     [:a {:data-filter "size"
+          :data-value "all"}
+      "all"]]
+    (for [value ["1-10" "11-20" "21-30" "31-40" "41-50"]]
       [:div.item
        [:a.number-text {:data-filter "size"
                         :data-value value}
