@@ -32,7 +32,6 @@
                 :compiler {:output-to "resources/public/js/main.js",
                            :pretty-print false
                            :optimizations :advanced
-                           :externs ["externs/jquery-1.9.js"]
                            :print-input-delimiter false}}]}
 
   :garden {:source-path "src/garden"

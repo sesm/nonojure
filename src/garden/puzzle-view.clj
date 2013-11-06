@@ -65,7 +65,9 @@
 
         [:.button
              {:font-size "16px"
-              :color inactive-color}
+              :color inactive-color
+              :display "inline-block"
+              :margin "0px 20px 15px 0px"}
 
              [:&:hover
                   {:color active-color

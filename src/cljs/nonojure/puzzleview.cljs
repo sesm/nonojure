@@ -276,8 +276,9 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
     2 :right
     :unknown))
 
-(defn save-state [{:keys [puzzle storage board]}]
-  (stg/save-puzzle-progress storage (:id puzzle) board nil))
+(defn save-state [{:keys [puzzle storage board] :as state}]
+  (stg/save-puzzle-progress storage (:id puzzle) board nil)
+  state)
 
 (defn handle-mouse-down-on-cell [evt state]
   (let [cell (.-target evt)
@@ -288,8 +289,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
     (assoc state
       :fill-style style
       :base-cell [x y]
-      :last-cell [x y]
-      :board (change-cell-in-board (:board state) x y style))))
+      :last-cell [x y])))
 
 (defn handle-mouse-enter-on-cell [evt state]
   (let [cell (.-target evt)
@@ -316,9 +316,24 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                     board)
         new-state (-> state
                       (assoc :board new-board)
+                      (update-in [:history] #(cons board %))
                       (dissoc :fill-style :last-cell :base-cell))]
     (save-state new-state)
     new-state))
+
+(defn update-cells-by-board! [board]
+  (let [width (count (first board))
+        height (count board)]
+    (update-cells-region-style! [0 0] [(dec width) (dec height)] (fn [x y] (get-in board [y x])))))
+
+(defn undo-step [{:keys [history] :as state}]
+  (if-let [prev (first history)]
+    (do (update-cells-by-board! prev)
+        (-> state
+            (assoc :board prev
+                   :history (rest history))
+            (save-state)))
+    state))
 
 (defn cancel-dragging [{:keys [fill-style base-cell last-cell board] :as state}]
   (when fill-style
@@ -340,10 +355,8 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   (let [progress (progress (get-in state [:puzzle :id]))
         state (if (= (keyword (:status progress)) :solved) (assoc state :solved? true) state)]
     (if-let [saved-board (or (:auto progress) (:solution progress))]
-      (let [width (count (first saved-board))
-            height (count saved-board)]
-        (update-cells-region-style! [0 0] [(dec width) (dec height)] (fn [x y] (get-in saved-board [y x])))
-        (assoc state :board saved-board))
+      (do (update-cells-by-board! saved-board)
+          (assoc state :board saved-board))
       state)))
 
 (defn add-handlers [event-chan root]
@@ -361,7 +374,8 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
     (listen! [table :.num]
              :mousedown (add-event :number-click)
              :contextmenu disable-context-menu)
-    (listen! (sel1 root :#button-clear) :click (add-event :clear))))
+    (listen! (sel1 root :#button-clear) :click (add-event :clear))
+    (listen! (sel1 root :#button-undo) :click (add-event :undo))))
 
 (defn create-state [storage root puzzle]
   {:fill-style nil
@@ -371,15 +385,18 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
    :puzzle puzzle
    :view root
    :storage storage
+   :history []
    :board (init-board (count (:top puzzle)) (count (:left puzzle)))})
 
-(defn clear-state [state]
-  (create-state (:storage state) (:view state) (:puzzle state)))
+(defn clear-state [{:keys [storage view puzzle board history]}]
+  (-> (create-state storage view puzzle)
+      (assoc :history (cons board history))))
 
 (defn show [root nono event-chan]
   (doto root
     (append! [:div.button-container
-              [:p.button#button-clear "clear"]])
+              [:p.button#button-clear "clear"]
+              [:p.button#button-undo "undo"]])
     (append! [:div#puzzle-view.center (create-template nono)]))
   (let [storage window/localStorage]
     (put! event-chan [:new-state (create-state storage root nono)])
@@ -405,8 +422,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                        :number-click (do (handle-number-click data) state)
                        :clear (let [cleared-state (clear-state state)]
                                 (clear-puzzle)
-                                (save-state cleared-state)
-                                cleared-state)
+                                (save-state cleared-state))
                        :mouseleave-drawing-board (do (highlight-row-col -1 -1) state)
                        :new-state (do (add-handlers event-chan (:view data))
                                       data)
@@ -414,6 +430,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                                                (load-puzzle data (:view state) event-chan))
                                              (show-view :puzzle)
                                              state)
+                       :undo (undo-step state)
                        (do (log "Unknown event:" event-type) state))]
        (recur (<! event-chan) new-state)))))
 
