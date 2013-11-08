@@ -5,6 +5,9 @@
            goog.debug.Console)
   (:require-macros [dommy.macros :refer [sel1]]))
 
+(defn range-inc [a b]
+  (range (min a b) (inc (max a b))))
+
 (defn show-ajax-indicator []
   (dommy/add-class! (sel1 :#ajax-indicator) "visible"))
 
