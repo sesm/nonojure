@@ -8,39 +8,39 @@
 
 
 (defprotocol PuzzleWidget
-  (cell-state [this x y]
+  (cell-state [widget x y]
     "Get state of cell [x y]. Possible values :empty, :filled, :crossed")
 
-  (change-region! [this from to state-fn]
+  (change-region! [widget from to state-fn]
     "Visually changes state of region of cells.
   from - one corner of the region in form [x y]
   to - opposite corner in form [x y]
   state-fn - function, takes x and y and returns new state for the cell")
 
-  (change-whole-board! [this board]
+  (change-whole-board! [widget board]
     "Visually changes whole board setting it to given one.")
 
-  (clear-puzzle! [this]
+  (clear-puzzle! [widget]
     "Visually reset state of all cells to :empty and remove highlightings of numbers.")
 
-  (highlight-current-row-col! [this row col]
+  (highlight-current-row-col! [widget row col]
     "Highlights specified row and column.")
 
-  (highlight-solved-rows-cols! [this rows cols]
+  (highlight-solved-rows-cols! [widget rows cols]
     "Highlight in numbers in solved rows and columns.
   rows and cols - collection of rows/cols as numbers")
 
-  (init! [this]
+  (init! [widget]
     "Initiate widget.")
 
-  (load-puzzle! [this puzzle]
+  (load-puzzle! [widget puzzle]
     "Remove old puzzle and draw new one.")
 
-  (set-no-puzzle-message! [this]
+  (set-no-puzzle-message! [widget]
     "Show message when no puzzle is selected.")
 
-  (subscribe [this channel]
-    "User communicates with widget and generates user events. This user events are sent
+  (subscribe [widget channel]
+    "User communicates with widget and generates user events. Widget user events are sent
   to core.async channel in form [event-type data]. Events:
   [:mousedown-cell [x y button]] - user pressed mouse button on a cell
   [:mouseenter-cell [x y button]] - user's cursor entered a cell
@@ -51,10 +51,10 @@
   [:clear nil] - user clicked on 'clear' button
   [:undo nil] - user clicked on 'undo' button")
 
-  (toggle-number! [this coord]
+  (toggle-number! [widget coord]
     "Change state (highlights or dehighlights) given number.")
 
-  (unload-puzzle! [this]
+  (unload-puzzle! [widget]
     "Remove current puzzle from widget leaving it empty."))
 
 (defn attr-int [cell attribute]
@@ -189,66 +189,87 @@
     2 :right
     :unknown))
 
+(def filled-styles [:filled-blot :filled-square])
+(def crossed-styles [:crossed-cross :crossed-dot])
+
+(defn next-style-map [styles]
+  (->> (partition 2 1 styles styles)
+       (map vec)
+       (into {})))
+
+(defn change-style! [widget next-style-map]
+  (when-let [cur-style (->> (keys next-style-map)
+                            (filter #(dommy/has-class? widget %))
+                            first)]
+    (doto widget
+      (dommy/remove-class! cur-style)
+      (dommy/add-class! (next-style-map cur-style)))))
+
 (extend-protocol PuzzleWidget
 
   js/HTMLDivElement
-  (cell-state [this x y]
-    (let [cell (sel1 this (str ".cell.c" x ".r" y))]
+  (cell-state [widget x y]
+    (let [cell (sel1 widget (str ".cell.c" x ".r" y))]
       (cond (dommy/has-class? cell "filled") :filled
             (dommy/has-class? cell "crossed") :crossed
             :default :empty)))
 
-  (change-region! [this [from-x from-y] [to-x to-y] state-fn]
+  (change-region! [widget [from-x from-y] [to-x to-y] state-fn]
     (doseq [x (range-inc from-x to-x)
             y (range-inc from-y to-y)
-            :let [cell (sel1 this (str ".r" y ".c" x))]]
+            :let [cell (sel1 widget (str ".r" y ".c" x))]]
       (change-cell-style! cell (state-fn x y))))
 
-  (change-whole-board! [this board]
+  (change-whole-board! [widget board]
     (let [width (count (first board))
           height (count board)]
-      (change-region! this [0 0] [(dec width) (dec height)] (fn [x y] (get-in board [y x])))))
+      (change-region! widget [0 0] [(dec width) (dec height)] (fn [x y] (get-in board [y x])))))
 
-  (clear-puzzle! [this]
+  (clear-puzzle! [widget]
     (doseq [class ["num-clicked" "filled" "crossed"]
-            el (sel this (str "." class))]
+            el (sel widget [:#puzzle-table (str "." class)])]
       (dommy/remove-class! el class))
-    (highlight-solved-rows-cols! this [] []))
+    (highlight-solved-rows-cols! widget [] []))
 
-  (highlight-current-row-col! [this row col]
-    (doseq [el (sel this [:#puzzle :.highlighted])]
+  (highlight-current-row-col! [widget row col]
+    (doseq [el (sel widget [:#puzzle :.highlighted])]
       (dommy/remove-class! el "highlighted"))
-    (doseq [el (sel this [:#puzzle (str ".num.c" col)])]
+    (doseq [el (sel widget [:#puzzle (str ".num.c" col)])]
       (dommy/add-class! el "highlighted"))
-    (doseq [el (sel this [:#puzzle (str ".num.r" row)])]
+    (doseq [el (sel widget [:#puzzle (str ".num.r" row)])]
       (dommy/add-class! el "highlighted")))
 
-  (highlight-solved-rows-cols! [this rows cols]
-    (doseq [el (sel this :.solved.num)]
+  (highlight-solved-rows-cols! [widget rows cols]
+    (doseq [el (sel widget :.solved.num)]
       (dommy/remove-class! el "solved"))
     (let [rows (map #(str ".num.r" %) rows)
           cols (map #(str ".num.c" %) cols)]
       (doseq [cls (concat rows cols)
-              el (sel this cls)]
+              el (sel widget cls)]
         (dommy/add-class! el "solved"))))
 
-  (init! [this]
-    (dommy/add-class! this "center") )
+  (init! [widget]
+    (doseq [class ["center" "filled-blot" "crossed-cross"]]
+      (dommy/add-class! widget class)) )
 
-  (load-puzzle! [this puzzle]
-    (doto this
+  (load-puzzle! [widget puzzle]
+    (doto widget
       unload-puzzle!
       (append! [:div.button-container
                 [:p.button#button-clear "clear"]
-                [:p.button#button-undo "undo"]])
+                [:p.button#button-undo "undo"]
+                [:p.button.image.filled
+                 {:title "change fill style"}]
+                [:p.button.image.crossed
+                 {:title "change space style"}]])
       (append! [:div#puzzle-view.center (create-template puzzle)])))
 
-  (set-no-puzzle-message! [this]
-    (doto this
+  (set-no-puzzle-message! [widget]
+    (doto widget
       (dommy/clear!)
       (dommy/append! [:div.no-puzzle "Please select nonogram in \"browse\" tab."])))
 
-  (subscribe [this channel]
+  (subscribe [widget channel]
     (letfn [(add-event [event-type transformer]
               (fn [browser-event]
                 (put! channel [event-type (transformer browser-event)])))
@@ -262,7 +283,7 @@
                 (attr cell :data-coord)))
             (to-nil [_] nil)]
 
-      (let [table (sel1 this :#puzzle-table)]
+      (let [table (sel1 widget :#puzzle-table)]
         (listen! [table :.cell]
                  :mousedown (add-event :mousedown-cell cell-info)
                  :contextmenu disable-context-menu
@@ -275,13 +296,17 @@
         (listen! [table :.num]
                  :mousedown (add-event :number-click number-coord)
                  :contextmenu disable-context-menu)
-        (listen! (sel1 this :#button-clear) :click (add-event :clear to-nil))
-        (listen! (sel1 this :#button-undo) :click (add-event :undo to-nil)))))
+        (listen! (sel1 widget :#button-clear) :click (add-event :clear to-nil))
+        (listen! (sel1 widget :#button-undo) :click (add-event :undo to-nil))
+        (listen! (sel1 widget :.button.crossed) :click
+                 #(change-style! widget (next-style-map crossed-styles)))
+        (listen! (sel1 widget :.button.filled) :click
+                 #(change-style! widget (next-style-map filled-styles))))))
 
-  (toggle-number! [this coord]
+  (toggle-number! [widget coord]
     (let [query (str "td[data-coord='" coord "']")]
-      (doseq [el (sel this query)]
+      (doseq [el (sel widget query)]
         (dommy/toggle-class! el "num-clicked"))))
 
-  (unload-puzzle! [this]
-    (dommy/clear! this)))
+  (unload-puzzle! [widget]
+    (dommy/clear! widget)))
