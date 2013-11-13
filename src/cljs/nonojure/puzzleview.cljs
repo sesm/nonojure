@@ -174,6 +174,11 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   (-> (create-state storage widget puzzle solved?)
       (assoc :history (cons board history))))
 
+(defn change-style [{:keys [storage widget] :as state} style]
+  (stg/save-preferences storage style nil)
+  (pw/change-style! widget style)
+  state)
+
 (defn show [view nono event-chan]
   (log "Load puzzle")
   (pw/load-puzzle! view nono)
@@ -211,6 +216,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                                              (show-view :puzzle)
                                              state)
                        :undo (undo-step state)
+                       :change-style (change-style state data)
                        (do (log "Unknown event:" event-type) state))]
        (recur (<! event-chan) new-state)))))
 
@@ -232,4 +238,6 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 
 (defn ^:export init [view]
   (pw/init! view)
+  (stg/load-preferences window/localStorage
+                        #(pw/change-style! view (or % {})))
   (start-async-loop view))

@@ -3,9 +3,13 @@
             [nonojure.endec :refer [encode-board decode-board]]))
 
 (defprotocol Storage
-  (load-progress [this ids callback])
-  (save-puzzle-progress [this id progress callback])
-  (mark-puzzle-solved [this id solution callback]))
+  (load-progress [storage ids callback])
+  (save-puzzle-progress [storage id progress callback])
+  (mark-puzzle-solved [storage id solution callback])
+  (save-preferences [storage preferences callback])
+  (load-preferences [storage callback]))
+
+(def pref-key "preferences")
 
 (defn to-str [data]
   (.stringify js/JSON (clj->js data)))
@@ -51,10 +55,11 @@
   ((or callback identity) result))
 
 (extend-protocol Storage
+
   js/Storage
-  (load-progress [this ids callback]
+  (load-progress [storage ids callback]
     (let [load-single-puzzle (fn [id]
-                               (if-let [item (get-item this (keyword id))]
+                               (if-let [item (get-item storage (keyword id))]
                                  (decode-boards item)
                                  nil))
           items (into {} (for [id ids
@@ -62,17 +67,26 @@
                                :when item]
                            [id item]))]
      (safe-call callback items)))
-  (save-puzzle-progress [this id progress callback]
-    (safe-call callback (update-progress this (keyword id) {:auto progress} :in-progress)))
-  (mark-puzzle-solved [this id solution callback]
-    (safe-call callback (update-progress this (keyword id)
+  (save-puzzle-progress [storage id progress callback]
+    (safe-call callback (update-progress storage (keyword id) {:auto progress} :in-progress)))
+  (mark-puzzle-solved [storage id solution callback]
+    (safe-call callback (update-progress storage (keyword id)
                                          {:auto nil
                                           :solution solution}
                                          :solved)))
+  (save-preferences [storage preferences callback]
+    (safe-call callback (set-item storage pref-key preferences)))
+  (load-preferences [storage callback]
+    (safe-call callback (get-item storage pref-key)))
+
   nil
-  (load-progress [this ids callback]
+  (load-progress [storage ids callback]
     (safe-call callback {}))
-  (save-puzzle-progress [this id progress callback]
+  (save-puzzle-progress [storage id progress callback]
     (safe-call callback nil))
-  (mark-puzzle-solved [this id solution callback]
+  (mark-puzzle-solved [storage id solution callback]
+    (safe-call callback nil))
+  (save-preferences [storage preferences callback]
+    (safe-call callback nil))
+  (load-preferences [storage callback]
     (safe-call callback nil)))

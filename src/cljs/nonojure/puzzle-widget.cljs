@@ -17,6 +17,10 @@
   to - opposite corner in form [x y]
   state-fn - function, takes x and y and returns new state for the cell")
 
+  (change-style! [widget style]
+    "Changes global style preferences for widget like fill style, crossed style.
+  style - map of style preferences")
+
   (change-whole-board! [widget board]
     "Visually changes whole board setting it to given one.")
 
@@ -49,7 +53,8 @@
   [:mouseleave-drawing-board nil] - user's cursor left puzzle (table with cells and numbers
   [:number-click coord] - user clicked on a number
   [:clear nil] - user clicked on 'clear' button
-  [:undo nil] - user clicked on 'undo' button")
+  [:undo nil] - user clicked on 'undo' button
+  [:style-changed style-map] - user changed style (filled or cross style)")
 
   (toggle-number! [widget coord]
     "Change state (highlights or dehighlights) given number.")
@@ -197,13 +202,11 @@
        (map vec)
        (into {})))
 
-(defn change-style! [widget next-style-map]
-  (when-let [cur-style (->> (keys next-style-map)
-                            (filter #(dommy/has-class? widget %))
-                            first)]
-    (doto widget
-      (dommy/remove-class! cur-style)
-      (dommy/add-class! (next-style-map cur-style)))))
+(defn get-style [widget]
+  (letfn [(find-current [classes]
+            (first (filter #(dommy/has-class? widget %) classes)))]
+    {:filled-style (find-current filled-styles)
+     :crossed-style (find-current crossed-styles)}))
 
 (extend-protocol PuzzleWidget
 
@@ -219,6 +222,12 @@
             y (range-inc from-y to-y)
             :let [cell (sel1 widget (str ".r" y ".c" x))]]
       (change-cell-style! cell (state-fn x y))))
+
+  (change-style! [widget style]
+    (apply dommy/remove-class! widget (concat filled-styles crossed-styles))
+    (dommy/add-class! widget
+                      (style :filled-style (first filled-styles))
+                      (style :crossed-style (first crossed-styles))))
 
   (change-whole-board! [widget board]
     (let [width (count (first board))
@@ -249,8 +258,7 @@
         (dommy/add-class! el "solved"))))
 
   (init! [widget]
-    (doseq [class ["center" "filled-blot" "crossed-cross"]]
-      (dommy/add-class! widget class)) )
+    (dommy/add-class! widget :center))
 
   (load-puzzle! [widget puzzle]
     (doto widget
@@ -281,6 +289,9 @@
             (number-coord [evt]
               (let [cell (.-target evt)]
                 (attr cell :data-coord)))
+            (add-change-style [key possible-styles]
+              #(let [new-style (update-in (get-style widget) [key] (next-style-map possible-styles))]
+                 (put! channel [:change-style new-style])))
             (to-nil [_] nil)]
 
       (let [table (sel1 widget :#puzzle-table)]
@@ -299,9 +310,9 @@
         (listen! (sel1 widget :#button-clear) :click (add-event :clear to-nil))
         (listen! (sel1 widget :#button-undo) :click (add-event :undo to-nil))
         (listen! (sel1 widget :.button.crossed) :click
-                 #(change-style! widget (next-style-map crossed-styles)))
+                 (add-change-style :crossed-style crossed-styles))
         (listen! (sel1 widget :.button.filled) :click
-                 #(change-style! widget (next-style-map filled-styles))))))
+                 (add-change-style :filled-style filled-styles)))))
 
   (toggle-number! [widget coord]
     (let [query (str "td[data-coord='" coord "']")]
