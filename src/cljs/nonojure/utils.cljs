@@ -22,10 +22,13 @@
      (on-success clj-data))
     (hide-ajax-indicator)))
 
-(defn ajax [url & [on-success-fn method]]
+(defn ajax [url & [on-success-fn method data]]
   (show-ajax-indicator)
-  (goog.net.XhrIo.send url (partial ajax-callback on-success-fn)
-                       (if (keyword? method) (name method) method)))
+  (let [method (if (keyword? method) (name method) method)
+        data (if-not (nil? data) (.stringify js/JSON (clj->js data)) nil)]
+    (goog.net.XhrIo.send url (partial ajax-callback on-success-fn)
+                         method data
+                         (clj->js {:content-type "application/json"}))))
 
 (def logger (goog.debug.Logger/getLogger ""))
 

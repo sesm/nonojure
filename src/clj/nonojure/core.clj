@@ -3,14 +3,15 @@
    [compojure.core :refer :all]
    [compojure.handler :as chandler]
    [compojure.route :as croute]
-   [ring.middleware.json :refer [wrap-json-response]]
+   [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
    [ring.util.response :refer [response]]
    [org.httpkit.server :as httpkit]
    [ring.util.response :refer [file-response]]
    [cheshire.core :as json]
    [nonojure
     [db :as db]
-    [config :refer [config]]]
+    [config :refer [config]]
+    [user :as user]]
    [taoensso.timbre :as timbre
     :refer (trace debug info warn error fatal spy with-log-level)]))
 
@@ -20,6 +21,10 @@
          (map #(Double/parseDouble %)))
     nil))
 
+(defroutes user-api
+  (GET "/status" req (user/status req))
+  (POST "/logout" req (user/logout req)))
+
 (defroutes api
   (GET "/nonograms" [filter value sort order]
        (response (db/find-nonograms {:filter-field (keyword filter)
@@ -28,6 +33,10 @@
                                      :sort-order (keyword order)})))
   (GET "/nonograms/:id" [id]
        (response (db/find-nonogram-by-id id)))
+  (ANY "/echo" req
+       (response (pr-str req)))
+  (POST "/user/login" req (user/login req))
+  (context "/user" [] (user/wrap-restricted user-api))
   (POST "/rate/:id" [id difficulty]
         (response (db/update-difficulty id (Integer/parseInt difficulty)))))
 
@@ -42,6 +51,7 @@
   (GET "/rating" [] (file-response "resources/rating.html"))
   (context "/api" [] (-> api
                          (wrap-error)
+                         (wrap-json-body {:keywords? true})
                          (wrap-json-response {:pretty true})))
   (croute/resources "/static")
   (GET "*" [] (file-response "resources/index.html"))
@@ -59,10 +69,9 @@
 
 (defn start []
   (db/connect (:mongo config))
-  (let [stop (httpkit/run-server app (:web config))]
+  (let [stop (httpkit/run-server #'app (:web config))]
     (info (str "Started server on port " (get-in config [:web :port])))
     stop))
-
 
 #_(
    (def server (start))

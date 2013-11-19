@@ -8,11 +8,14 @@
       (edn/read-string {:eof {}} (slurp "config.clj"))
       {})))
 
+(def one-hour (* 60 60 1000))
+
 (def default-config
   {:mongo {:host "localhost"
            :port 27017
            :username nil
            :password nil}
-   :web {:port 3000}})
+   :web {:port 3000
+         :persona-audience "http://localhost:3000"}})
 
 (def config (merge default-config (read-config)))

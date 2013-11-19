@@ -2,16 +2,22 @@
 <html>
   <head>
     <title>Nonojure</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <link rel="stylesheet" media="screen" href="http://openfontlibrary.org/face/intuitive" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/puzzle-view.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/puzzle-widget.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/browser-view.css"/>
     <link rel="stylesheet" type="text/css" href="/static/css/common.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/persona-buttons.css"/>
+    <script src="https://login.persona.org/include.js"></script>
     <script type="text/javascript" src="/static/js/main.js" ></script>
   </head>
   <body>
+    <div class="user-area">
+      <span id="login" class="button">login</span>
+    </div>
     <div class="head-div">
-      <p class="header">Nonojure</p>
+      <p id="title">Nonojure</p>
     </div>
     <div id="navigation"></div>
     <div id="views"></div>
@@ -21,5 +27,6 @@
     nonojure.puzzleview.init(document.getElementById("puzzle"));
     nonojure.puzzlebrowser.init(document.getElementById("browser"));
     nonojure.url.init();
+    nonojure.auth.init();
   </script>
 </html>

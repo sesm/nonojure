@@ -1,3 +1,5 @@
+(def text-color-inactive "#888")
+
 [:body
     {:font-family "Intuitive"
      :overflow-y "scroll"}]
@@ -5,17 +7,37 @@
 [:.number-text
     {:font-family "Colibri"}]
 
-[:.header
-    {:text-transform "uppercase"
-     :font-size "2.7em"
-     :margin "0px"
-     :text-align "center"}]
+[:.user-area
+    {:float "right"}
+
+    [:.button
+        {:color text-color-inactive
+         :font-size "18px"
+         :margin "0px"
+         :display "inline-block"}
+
+        [:&:hover
+            {:cursor "pointer"
+             :border-bottom (str "1px solid "
+                                 text-color-inactive)}]]
+
+    [:.email
+        {:color text-color-inactive
+         :display "inline-block"
+         :margin "0px 10px 0px 0px"
+         :font-size "16px"}]]
 
 [:.head-div
     {:position "relative"
      :width "200px"
      :margin-left "auto"
-     :margin-right "auto"}]
+     :margin-right "auto"}
+
+    [:#title
+        {:text-transform "uppercase"
+         :font-size "2.7em"
+         :margin "0px"
+         :text-align "center"}]]
 
 [:#navigation
     {:margin "20px auto"
@@ -23,7 +45,7 @@
 
     [:.tab-button
         {:font-size "25px"
-         :color "#888"
+         :color text-color-inactive
          :display "inline-block"
          :margin "10px 20px"
          :border-bottom "3px solid white"}
@@ -39,7 +61,8 @@
 
         [:&:hover
          {:cursor "pointer"
-          :border-bottom "3px solid #888"}]]]
+          :border-bottom (str "3px solid "
+                              text-color-inactive)}]]]
 
 [:.hidden {:display "none"}]
 
