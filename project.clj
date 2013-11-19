@@ -37,7 +37,8 @@
                 :compiler {:output-to "resources/public/js/main.js"
                            :pretty-print false
                            :optimizations :advanced
-                           :print-input-delimiter false}}]}
+                           :print-input-delimiter false
+                           :externs ["externs.js"]}}]}
 
   :garden {:source-path "src/garden"
            :output-path "resources/public/css"})
