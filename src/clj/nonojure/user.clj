@@ -10,7 +10,8 @@
             [cheshire.core :refer [parse-string]]
             [org.httpkit.server :as httpkit]
             [org.httpkit.client :refer [post]]
-            [clojure.string :refer [split]]))
+            [clojure.string :refer [split]]
+            [taoensso.timbre :refer [debug spy]]))
 
 (defn wrap-restricted [handler]
   (fn [req]
@@ -25,8 +26,8 @@
     {:status "okay"
      :email "test@nonojure.com"}
     (-> (post "https://verifier.login.persona.org/verify"
-              {:form-params {:assertion assertion
-                             :audience (get-in config [:web :persona-audience])}})
+              (spy {:form-params {:assertion assertion
+                                  :audience (get-in config [:web :persona-audience])}}))
         deref
         :body
         (parse-string true))))
@@ -40,9 +41,10 @@
              :result :ok}
             response
             (assoc :session {:email email})))
-      {:status 401
-       :body {:result :fail
-              :message "invalid assertion"}})))
+      (do (debug resp)
+        {:status 401
+         :body {:result :fail
+                :message "invalid assertion"}}))))
 
 (defn logout [req]
   {:status 200
@@ -62,7 +64,8 @@
   (with-email req
     (let [ids (split (get-in req [:params :ids]) #",")]
       (->> (db/find-puzzle-progress-by-ids ids email)
-           (map #(select-keys % [:current-state :solution :status :puzzle-id]))
+           (map #(vector (:puzzle-id %) (select-keys % [:current-state :solution :status])))
+           (into {})
            response))))
 
 (defn- update-progress [puzzle-id email new-progress keys default]
@@ -77,7 +80,9 @@
 
 (defn mark-puzzle-solved [{:keys [body] :as req}]
   (with-email req
-    (db/save-puzzle-progress (:puzzle-id body) email (assoc body :status :solved))
+    (db/save-puzzle-progress (:puzzle-id body) email (assoc body
+                                                       :status :solved
+                                                       :current-state nil))
     (response {:result :ok})))
 
 (defn get-preferences [req]

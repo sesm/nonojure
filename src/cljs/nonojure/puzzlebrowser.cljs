@@ -90,12 +90,12 @@
     (let [query (str ".thumbnail[data-id='" (name id) "']")]
       (when-let [thumbnail (sel1 @root query)]
         (dommy/add-class! thumbnail (:status progress))
-        (when-let [state (or (:auto progress) (:solution progress))]
+        (when-let [state (or (:current-state progress) (:solution progress))]
           (draw-grid thumbnail (count (first state)) (count state) state))))))
 
 (defn- reload-progress []
   (let [ids (map #(dommy/attr % :data-id) (sel @root :.thumbnail))]
-   (stg/load-progress window/localStorage ids apply-progress)))
+   (stg/load-progress @stg/storage ids apply-progress)))
 
 (defn create-thumbnails [nonos]
   (when-let [old (sel1 @root :#thumbnails)]

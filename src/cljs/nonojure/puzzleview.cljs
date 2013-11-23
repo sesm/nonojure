@@ -155,7 +155,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 (defn apply-progress [state progress]
   (let [progress (progress (get-in state [:puzzle :id]))
         state (if (= (keyword (:status progress)) :solved) (assoc state :solved? true) state)]
-    (if-let [saved-board (or (:auto progress) (:solution progress))]
+    (if-let [saved-board (or (:current-state progress) (:solution progress))]
       (do (pw/change-whole-board! (:widget state) saved-board)
           (assoc state :board saved-board))
       state)))
@@ -184,7 +184,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 (defn show [view nono event-chan]
   (log "Load puzzle")
   (pw/load-puzzle! view nono)
-  (let [storage window/localStorage]
+  (let [storage @stg/storage]
     (put! event-chan [:new-state (create-state storage view nono false)])
     (stg/load-progress storage [(:id nono)] #(put! event-chan [:progress-loaded %]))))
 
@@ -204,7 +204,8 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                        :mouseenter-cell (handle-mouse-enter-on-cell state data)
                        :mouseup-cell (check-solution (stop-dragging state))
                        :mouseleave-board (cancel-dragging state)
-                       :progress-loaded (check-solution (apply-progress state data))
+                       :progress-loaded (do (log "progress" data)
+                                          (check-solution (apply-progress state data)))
                        :number-click (do (handle-number-click state data) state)
                        :clear (let [cleared-state (clear-state state)]
                                 (pw/clear-puzzle! (:widget state))
@@ -240,6 +241,6 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 
 (defn ^:export init [view]
   (pw/init! view)
-  (stg/load-preferences window/localStorage
+  (stg/load-preferences @stg/storage
                         #(pw/change-style! view (or % {})))
   (start-async-loop view))

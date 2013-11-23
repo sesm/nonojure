@@ -1,6 +1,7 @@
 (ns nonojure.storage
-  (:require [nonojure.utils :refer [log]]
-            [nonojure.endec :refer [encode-board decode-board]]))
+  (:require [nonojure.utils :refer [log ajax]]
+            [nonojure.shared.endec :refer [encode-board decode-board]]
+            [clojure.string :refer [join]]))
 
 (defprotocol Storage
   (load-progress [storage ids callback])
@@ -27,21 +28,19 @@
   (reduce (fn [progress type]
             (if-let [board (progress type)]
               (assoc progress
-                type (encode-board board)
-                :width (count (first board)))
+                type (encode-board board))
               progress))
           progress
-          [:auto :solution]))
+          [:current-state :solution]))
 
 (defn decode-boards [progress]
-  (let [width (:width progress)]
-    (reduce (fn [progress type]
-              (if-let [board (progress type)]
-                (assoc progress
-                  type (decode-board board width))
-                progress))
-            progress
-            [:auto :solution])))
+  (reduce (fn [progress type]
+            (if-let [board (progress type)]
+              (assoc progress
+                type (decode-board board))
+              progress))
+          progress
+          [:current-state :solution]))
 
 (defn- update-progress [storage id progress status]
   (let [old-item (or (get-item storage id) {})
@@ -68,10 +67,10 @@
                            [id item]))]
      (safe-call callback items)))
   (save-puzzle-progress [storage id progress callback]
-    (safe-call callback (update-progress storage (keyword id) {:auto progress} :in-progress)))
+    (safe-call callback (update-progress storage (keyword id) {:current-state progress} :in-progress)))
   (mark-puzzle-solved [storage id solution callback]
     (safe-call callback (update-progress storage (keyword id)
-                                         {:auto nil
+                                         {:current-state nil
                                           :solution solution}
                                          :solved)))
   (save-preferences [storage preferences callback]
@@ -90,3 +89,30 @@
     (safe-call callback nil))
   (load-preferences [storage callback]
     (safe-call callback nil)))
+
+(deftype ServerStorage []
+  Storage
+  (load-progress [storage ids callback]
+    (let [url (str "/api/user/get-progress?ids=" (join "," ids))
+          decode-callback (fn [progress]
+                            (when callback
+                              (->> (for [[id progress] progress]
+                                     [(name id) (decode-boards progress)])
+                                   (into {})
+                                   callback)))]
+      (ajax url decode-callback)))
+  (save-puzzle-progress [storage id progress callback]
+    (ajax "/api/user/save-puzzle-progress" callback :POST
+          (encode-boards {:puzzle-id id
+                          :current-state progress})))
+  (mark-puzzle-solved [storage id solution callback]
+    (ajax "/api/user/mark-puzzle-solved" callback :POST
+          (encode-boards {:puzzle-id id
+                          :solution solution})))
+  (save-preferences [storage preferences callback]
+    (ajax "/api/user/save-preferences" callback :POST preferences))
+  (load-preferences [storage callback]
+    (ajax "/api/user/get-preferences" callback)))
+
+(def storage (atom window/localStorage))
+

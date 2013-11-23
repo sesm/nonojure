@@ -28,7 +28,7 @@
         data (if-not (nil? data) (.stringify js/JSON (clj->js data)) nil)]
     (goog.net.XhrIo.send url (partial ajax-callback on-success-fn)
                          method data
-                         (clj->js {:content-type "application/json"}))))
+                         (clj->js {:Content-Type "application/json"}))))
 
 (def logger (goog.debug.Logger/getLogger ""))
 
