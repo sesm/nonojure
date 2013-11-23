@@ -3,13 +3,15 @@
              [core :as mg]
              [collection :as mc]
              [query :as mq]
-             [operators :refer [$gte $lte $or]]]
+             [operators :refer [$gte $lte $or $in]]]
             [nonojure
              [random :refer [generate-puzzle]]]
             [taoensso.timbre :refer [error warn]])
   (:import [org.bson.types ObjectId]))
 
 (def nono-coll "nonograms")
+(def progress-coll "progress")
+(def pref-coll "preferences")
 (def db-name "nonojure")
 
 (defn connect [config]
@@ -86,6 +88,42 @@
     (println new id)
     (update-difficulty id (inc (rand-int 3)))))
 
+(defn merge-progress [old new]
+  (let [status {:status (if (= (:status old) "solved")
+                          :solved (:status new))} ]
+    (merge old new status)))
+
+(defn save-puzzle-progress [puzzle-id email progress]
+  (if-let [existing (mc/find-one-as-map progress-coll
+                                        {:puzzle puzzle-id
+                                         :email email})]
+    (mc/update-by-id progress-coll (:_id existing)
+      (merge-progress existing progress))
+    (mc/insert progress-coll (assoc progress
+                               :email email
+                               :puzzle puzzle-id))))
+
+(defn find-puzzle-progress-by-ids [ids email]
+  (mc/find-maps progress-coll {:email email
+                               :puzzle {$in ids}}))
+
+(defn get-preferences [email]
+  (mc/find-one-as-map pref-coll {:_id email}))
+
+(defn save-preferences [email preferences]
+  (mc/upsert pref-coll {:_id email} (assoc preferences
+                                      :_id email)))
+
+#_(save-preferences "hello@world.com" {:style 1
+                                     :b-style 2})
+
+#_(find-puzzle-progress-by-ids ["1" "2" "3"] "hello@world.com")
+
+
+#_(save-puzzle-progress "1" "hello@world.com" {:solution ["asdfb" "123" "sdf"]
+                                             :status "solved"})
+
+;(clojure.repl/doc mc/update-by-id)
 
 #_(
 

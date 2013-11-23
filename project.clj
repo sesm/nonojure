@@ -15,7 +15,7 @@
                  [ring/ring-json "0.2.0"]
                  [cheshire "5.0.2"]
                  [compojure "1.1.6"]
-                 [com.novemberain/monger "1.5.0"]
+                 [com.novemberain/monger "1.6.0"]
                  [org.clojure/tools.reader "0.7.10"]
                  [org.clojure/core.cache "0.6.3"]
 
@@ -27,18 +27,21 @@
   :aot [nonojure.runner]
   :cljsbuild {:builds
               [{:id "dev"
-                :source-paths ["src/cljs" "src/cljs-dev"]
+                :source-paths ["src/cljs"]
                 :compiler {:output-to "resources/public/js/main.js"
                            :pretty-print true
                            :optimizations :whitespace
                            :print-input-delimiter true}}
+
                {:id "prod"
                 :source-paths ["src/cljs"]
                 :compiler {:output-to "resources/public/js/main.js"
                            :pretty-print false
                            :optimizations :advanced
                            :print-input-delimiter false
-                           :externs ["externs.js"]}}]}
+                           :externs ["externs.js"]}}]
+
+              :crossovers [nonojure.shared]}
 
   :garden {:source-path "src/garden"
            :output-path "resources/public/css"})

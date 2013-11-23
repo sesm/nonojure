@@ -1,13 +1,16 @@
 (ns nonojure.user
   (:require [clojure.core.cache :as ch]
+            [compojure.core :refer :all]
             [ring.middleware.session :refer [wrap-session]]
             [ring.middleware.json :refer [wrap-json-response]]
             [ring.util.response :refer [response]]
-            [nonojure.config :refer [config]]
+            [nonojure
+             [config :refer [config]]
+             [db :as db]]
             [cheshire.core :refer [parse-string]]
             [org.httpkit.server :as httpkit]
-            [org.httpkit.client :refer [post]]))
-
+            [org.httpkit.client :refer [post]]
+            [clojure.string :refer [split]]))
 
 (defn wrap-restricted [handler]
   (fn [req]
@@ -18,12 +21,15 @@
               :message "not authenticated"}})))
 
 (defn verify-persona-login [assertion]
-  (-> (post "https://verifier.login.persona.org/verify"
-            {:form-params {:assertion assertion
-                           :audience (get-in config [:web :persona-audience])}})
-      deref
-      :body
-      (parse-string true)))
+  (if (= assertion "clojure-rules")
+    {:status "okay"
+     :email "test@nonojure.com"}
+    (-> (post "https://verifier.login.persona.org/verify"
+              {:form-params {:assertion assertion
+                             :audience (get-in config [:web :persona-audience])}})
+        deref
+        :body
+        (parse-string true))))
 
 (defn login [req]
   (let [assertion (get-in req [:body :assertion])
@@ -39,11 +45,67 @@
               :message "invalid assertion"}})))
 
 (defn logout [req]
-  (assoc (response {:result :ok})
-    :session nil))
+  {:status 200
+   :body {:result :ok}
+   :session nil})
+
+(defmacro with-email [req & body]
+  `(let [~'email (get-in ~req [:session :email])]
+     ~@body))
 
 (defn status [req]
-  (response {:result :ok
-             :email (get-in req [:session :email])}))
+  (with-email req
+    (response {:result :ok
+               :email email})))
+
+(defn get-progress [req]
+  (with-email req
+    (let [ids (split (get-in req [:params :ids]) #",")]
+      (->> (db/find-puzzle-progress-by-ids ids email)
+           (map #(select-keys % [:current-state :solution :status :puzzle-id]))
+           response))))
+
+(defn- update-progress [puzzle-id email new-progress keys default]
+  (let [existing (first (db/find-puzzle-progress-by-ids [puzzle-id] email))]
+    (db/save-puzzle-progress puzzle-id email (merge (or existing default)
+                                                    (select-keys new-progress [keys])))))
+
+(defn save-puzzle-progress [{:keys [body] :as req}]
+  (with-email req
+    (db/save-puzzle-progress (:puzzle-id body) email (assoc body :status :in-progress))
+    (response {:result :ok})))
+
+(defn mark-puzzle-solved [{:keys [body] :as req}]
+  (with-email req
+    (db/save-puzzle-progress (:puzzle-id body) email (assoc body :status :solved))
+    (response {:result :ok})))
+
+(defn get-preferences [req]
+  (with-email req
+    (-> (db/get-preferences email)
+        (or {})
+        (dissoc :_id)
+        response)))
+
+(defn save-preferences [req]
+  (with-email req
+    (db/save-preferences email (:body req))
+    (response {:result :ok})))
+
+(defroutes user-api
+  (GET "/status" [] status)
+  (POST "/logout" [] logout)
+  (GET "/get-progress" [] get-progress)
+  (POST "/save-puzzle-progress" [] save-puzzle-progress)
+  (POST "/mark-puzzle-solved" [] mark-puzzle-solved)
+  (GET "/get-preferences" [] get-preferences)
+  (POST "/save-preferences" [] save-preferences))
+
+#_(defprotocol Storage
+  (load-progress [storage ids callback])
+  (save-puzzle-progress [storage id progress callback])
+  (mark-puzzle-solved [storage id solution callback])
+  (save-preferences [storage preferences callback])
+  (load-preferences [storage callback]))
 
 

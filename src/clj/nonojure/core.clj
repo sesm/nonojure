@@ -13,17 +13,13 @@
     [config :refer [config]]
     [user :as user]]
    [taoensso.timbre :as timbre
-    :refer (trace debug info warn error fatal spy with-log-level)]))
+    :refer [trace debug info warn error fatal spy with-log-level]]))
 
 (defn- parse-filter-value [value]
   (if value
     (->> (clojure.string/split value #"-")
          (map #(Double/parseDouble %)))
     nil))
-
-(defroutes user-api
-  (GET "/status" req (user/status req))
-  (POST "/logout" req (user/logout req)))
 
 (defroutes api
   (GET "/nonograms" [filter value sort order]
@@ -36,7 +32,7 @@
   (ANY "/echo" req
        (response (pr-str req)))
   (POST "/user/login" req (user/login req))
-  (context "/user" [] (user/wrap-restricted user-api))
+  (context "/user" [] (user/wrap-restricted user/user-api))
   (POST "/rate/:id" [id difficulty]
         (response (db/update-difficulty id (Integer/parseInt difficulty)))))
 
