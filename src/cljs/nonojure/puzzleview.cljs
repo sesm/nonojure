@@ -95,13 +95,15 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   state)
 
 (defn handle-mouse-down-on-cell [state [x y button]]
-  (let [widget (:widget state)
-        style (new-cell-style-after-click widget x y button)]
-    (pw/change-region! widget [x y] [x y] (constantly style))
-    (assoc state
-      :fill-style style
-      :base-cell [x y]
-      :last-cell [x y])))
+  (if-not (= button :middle)
+    (let [widget (:widget state)
+          style (new-cell-style-after-click widget x y button)]
+      (pw/change-region! widget [x y] [x y] (constantly style))
+      (assoc state
+        :fill-style style
+        :base-cell [x y]
+        :last-cell [x y]))
+    state))
 
 (defn handle-mouse-enter-on-cell [{:keys [fill-style base-cell last-cell drag-type widget board] :as state}
                                   [x y]]
