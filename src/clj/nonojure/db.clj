@@ -90,7 +90,8 @@
 
 (defn merge-progress [old new]
   (let [status {:status (if (= (:status old) "solved")
-                          :solved (:status new))} ]
+                          :solved
+                          (:status new))} ]
     (merge old new status)))
 
 (defn save-puzzle-progress [puzzle-id email progress]
@@ -109,6 +110,11 @@
 
 (defn get-preferences [email]
   (mc/find-one-as-map pref-coll {:_id email}))
+
+(defn get-short-progress [email]
+  (mq/with-collection progress-coll
+    (mq/find {:email email})
+    (mq/fields [:puzzle :status])))
 
 (defn save-preferences [email preferences]
   (mc/upsert pref-coll {:_id email} (assoc preferences

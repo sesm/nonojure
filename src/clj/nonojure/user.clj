@@ -97,6 +97,13 @@
     (db/save-preferences email (:body req))
     (response {:result :ok})))
 
+(defn get-short-progress [req]
+  (with-email req
+    (->> (db/get-short-progress email)
+         (map #(mapv % [:puzzle :status]))
+         (into {})
+         response)))
+
 (defroutes user-api
   (GET "/status" [] status)
   (POST "/logout" [] logout)
@@ -104,13 +111,5 @@
   (POST "/save-puzzle-progress" [] save-puzzle-progress)
   (POST "/mark-puzzle-solved" [] mark-puzzle-solved)
   (GET "/get-preferences" [] get-preferences)
-  (POST "/save-preferences" [] save-preferences))
-
-#_(defprotocol Storage
-  (load-progress [storage ids callback])
-  (save-puzzle-progress [storage id progress callback])
-  (mark-puzzle-solved [storage id solution callback])
-  (save-preferences [storage preferences callback])
-  (load-preferences [storage callback]))
-
-
+  (POST "/save-preferences" [] save-preferences)
+  (GET "/get-short-progress-all-puzzles" [] get-short-progress))
