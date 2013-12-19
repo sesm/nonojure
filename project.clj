@@ -4,6 +4,7 @@
 
   :plugins [[lein-cljsbuild "1.0.0"]
             [org.clojars.nbeloglazov/lein-garden "0.1.0-SNAPSHOT"]
+            [com.cemerick/clojurescript.test "0.2.1"]
             [lein-midje "3.1.1"]]
 
   :dependencies [[org.clojure/clojure "1.5.1"]
@@ -39,9 +40,16 @@
                            :pretty-print false
                            :optimizations :advanced
                            :print-input-delimiter false
-                           :externs ["externs.js"]}}]
+                           :externs ["externs.js"]}}
+               {:id "test"
+                :source-paths ["src/cljs" "test/cljs"]
+                :compiler {:output-to "target/cljs/testable.js"
+                           :optimizations :whitespace
+                           :pretty-print true}}]
 
-              :crossovers [nonojure.shared]}
+              :crossovers [nonojure.shared]
+              :test-commands {"unit-tests" ["phantomjs" :runner
+                                            "target/cljs/testable.js"]}}
 
   :garden {:source-path "src/garden"
            :output-path "resources/public/css"})

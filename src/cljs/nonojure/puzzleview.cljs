@@ -235,7 +235,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
       (add-no-puzzle-message view))))
 
 (defn start-async-loop [view]
-  (let [event-chan (chan 5)]
+  (let [event-chan (chan)]
     (handle-puzzle-events view event-chan)
     (subscribe :url-changed #(url-changed % event-chan view))))
 

@@ -6,6 +6,7 @@
 (defprotocol Storage
   (load-progress [storage ids callback])
   (save-puzzle-progress [storage id progress callback])
+  (remove-puzzle-progress [storage id callback])
   (mark-puzzle-solved [storage id solution callback])
   (save-preferences [storage preferences callback])
   (load-preferences [storage callback])
@@ -84,6 +85,10 @@
      (safe-call callback items)))
   (save-puzzle-progress [storage id progress callback]
     (safe-call callback (update-progress storage id {:current-state progress} :in-progress)))
+  (remove-puzzle-progress [storage id callback]
+    (->> (str "puzzle-" id)
+         (.removeItem storage)
+         (safe-call callback)))
   (mark-puzzle-solved [storage id solution callback]
     (safe-call callback (update-progress storage id
                                          {:current-state nil
@@ -93,11 +98,15 @@
     (safe-call callback (set-item storage pref-key preferences)))
   (load-preferences [storage callback]
     (safe-call callback (get-item storage pref-key)))
+  (load-short-progress [storage callback]
+    (safe-call callback (get-short-progress storage)))
 
   nil
   (load-progress [storage ids callback]
     (safe-call callback {}))
   (save-puzzle-progress [storage id progress callback]
+    (safe-call callback nil))
+  (remove-puzzle-progress [storage id callback]
     (safe-call callback nil))
   (mark-puzzle-solved [storage id solution callback]
     (safe-call callback nil))
@@ -106,7 +115,7 @@
   (load-preferences [storage callback]
     (safe-call callback nil))
   (load-short-progress [storage callback]
-    (safe-call callback (get-short-progress storage))))
+    (safe-call callback {})))
 
 (deftype ServerStorage []
   Storage
@@ -123,6 +132,9 @@
     (ajax "/api/user/save-puzzle-progress" callback :POST
           (encode-boards {:puzzle-id id
                           :current-state progress})))
+  (remove-puzzle-progress [storage id callback]
+    (log "remove puzzle for ServerStorage not implemented")
+    (safe-call callback nil))
   (mark-puzzle-solved [storage id solution callback]
     (ajax "/api/user/mark-puzzle-solved" callback :POST
           (encode-boards {:puzzle-id id
@@ -134,5 +146,9 @@
   (load-short-progress [storage callback]
     (ajax "/api/user/get-short-progress-all-puzzles" callback)))
 
-(def storage (atom window/localStorage))
+(def storage (atom nil))
+
+(defn ^:export init []
+  (reset! storage window/localStorage))
+
 
