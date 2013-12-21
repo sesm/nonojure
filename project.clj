@@ -9,7 +9,7 @@
 
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-2014"]
-                 [org.clojure/core.async "0.1.242.0-44b1e3-alpha"]
+                 [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
 
                  [com.taoensso/timbre "2.6.1"]
                  [http-kit "2.1.10"]
@@ -48,7 +48,7 @@
                            :pretty-print true}}]
 
               :crossovers [nonojure.shared]
-              :test-commands {"unit-tests" ["phantomjs" :runner
+              :test-commands {"unit-tests" ["phantomjs" "test/runner.js"
                                             "target/cljs/testable.js"]}}
 
   :garden {:source-path "src/garden"

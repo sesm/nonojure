@@ -1,9 +1,9 @@
 (ns nonojure.storage-test
-  (:require-macros [cemerick.cljs.test
+  (:require-macros [nonojure.riv-tests
                     :refer [is deftest testing]])
   (:require [nonojure.storage :as stg]
             [nonojure.atom-storage :as atom-stg]
-            cemerick.cljs.test))
+            nonojure.riv-tests))
 
 (defn noop [])
 
