@@ -1,6 +1,7 @@
 (ns nonojure.storage
   (:require [nonojure.utils :refer [log ajax]]
             [nonojure.shared.endec :refer [encode-board decode-board]]
+            [nonojure.pubsub :refer [subscribe publish]]
             [clojure.string :refer [join]]))
 
 (defprotocol Storage
@@ -146,9 +147,17 @@
   (load-short-progress [storage callback]
     (ajax "/api/user/get-short-progress-all-puzzles" callback)))
 
+(def local-storage window/localStorage)
+
+(def server-storage (ServerStorage.))
+
 (def storage (atom nil))
 
+(defn change-storage! [new-storage]
+  (reset! storage new-storage)
+  (publish :storage-changed))
+
 (defn ^:export init []
-  (reset! storage window/localStorage))
-
-
+  (subscribe :logged-in #(change-storage! server-storage))
+  (subscribe :logged-out #(change-storage! local-storage))
+  (reset! storage local-storage))

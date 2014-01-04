@@ -62,7 +62,7 @@
 (defn astg
   "Executes storage function returning channel that
 will get function result. Storage function args should not
-include callback as last argument. It wil be added by this function."
+include callback as last argument. It will be added by this function."
   [storage-fn & args]
   (let [result (chan)
         callback #(put! result (if (nil? %) :nil %))

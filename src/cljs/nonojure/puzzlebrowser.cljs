@@ -23,8 +23,6 @@
 
 (def difc-str->int (map-invert difc-int->str))
 
-
-
 (def cell-size 4)
 
 (defn draw-grid [thumbnail width height board-state]
@@ -126,19 +124,20 @@
 (defn retrieve-thumbnails [params]
   (let [query (build-query-str params true)
         url (str "/api/nonograms" (if (empty? query) "" "?") query)]
-    (log "Sending" url)
     (ajax url create-thumbnails)))
 
+(defn get-clause [selected]
+  {:filter (if selected
+             (dommy/attr selected :data-filter)
+             "size")
+   :value (if selected
+            (dommy/attr selected :data-value)
+            "all")
+   :sort "size"
+   :order "asc"})
+
 (defn get-browser-url [selected]
-  (let [clause {:filter (if selected
-                          (dommy/attr selected :data-filter)
-                          "size")
-                :value (if selected
-                         (dommy/attr selected :data-value)
-                         "all")
-                :sort "size"
-                :order "asc"}]
-    (str "browse?" (build-query-str clause false))))
+  (str "browse?" (build-query-str (get-clause selected) false)))
 
 (defn selected-button [root]
   (sel1 root [:.filtering :.selected]))
@@ -202,9 +201,13 @@ Returns true if button was switched to selected mode and false button already se
         (reload-progress)))
     (nav/show-view :browser)))
 
+(defn reload-all []
+  (-> @root selected-button get-clause retrieve-thumbnails))
+
 (defn ^:export init [el]
   (reset! root el)
   (dommy/append! el (add-filtering-listener (filtering)))
   (add-thumbnail-listener @root)
   (subscribe :show-browser reload-progress)
-  (subscribe :url-changed #(url-changed @root %)))
+  (subscribe :url-changed #(url-changed @root %))
+  (subscribe :storage-changed reload-all))

@@ -181,12 +181,15 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   (pw/change-style! widget style)
   state)
 
+(defn load-progress [id storage event-chan]
+  (stg/load-progress storage [id]
+                     #(put! event-chan [:progress-loaded %])))
+
 (defn show [view nono event-chan]
   (log "Load puzzle")
   (pw/load-puzzle! view nono)
-  (let [storage @stg/storage]
-    (put! event-chan [:new-state (create-state storage view nono false)])
-    (stg/load-progress storage [(:id nono)] #(put! event-chan [:progress-loaded %]))))
+  (put! event-chan [:new-state (create-state @stg/storage view nono false)])
+  (load-progress (:id nono) @stg/storage event-chan))
 
 (defn load-puzzle [id widget event-chan]
   (pw/unload-puzzle! widget)
@@ -220,6 +223,12 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                                              state)
                        :undo (undo-step state)
                        :change-style (change-style state data)
+                       :storage-changed (do (when-let [id (get-in state [:puzzle :id])]
+                                              (load-progress id @stg/storage event-chan))
+                                            (pw/clear-puzzle! (:widget state))
+                                            (-> state
+                                                clear-state
+                                                (assoc :storage @stg/storage)))
                        (do (log "Unknown event:" event-type) state))]
        (recur (<! event-chan) new-state)))))
 
@@ -237,7 +246,8 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 (defn start-async-loop [view]
   (let [event-chan (chan)]
     (handle-puzzle-events view event-chan)
-    (subscribe :url-changed #(url-changed % event-chan view))))
+    (subscribe :url-changed #(url-changed % event-chan view))
+    (subscribe :storage-changed #(put! event-chan [:storage-changed]))))
 
 (defn ^:export init [view]
   (pw/init! view)

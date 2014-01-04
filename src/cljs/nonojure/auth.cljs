@@ -1,6 +1,7 @@
 (ns nonojure.auth
   (:require [dommy.core :as dommy]
-            [nonojure.utils :refer [log ajax]])
+            [nonojure.utils :refer [log ajax]]
+            [nonojure.pubsub :refer [publish]])
   (:use-macros
    [dommy.macros :only [sel sel1]]))
 
@@ -22,13 +23,15 @@
 
 (defn on-server-login [{:keys [result email]}]
   (if (= result "ok")
-    (set-logged-in-status email)
+    (do (set-logged-in-status email)
+        (publish :logged-in))
     (do (log "Error on server login")
         (logout))))
 
 (defn on-server-logout [{:keys [result email]}]
   (if (= result "ok")
-    (set-logged-out-status)
+    (do (set-logged-out-status)
+        (publish :logged-out))
     (log "Error on server logout")))
 
 (defn on-persona-login [assertion]
@@ -47,7 +50,8 @@
   (ajax "/api/user/status" (fn [{:keys [result email]}]
                              (if (= result "ok")
                                (do (enable-persona email)
-                                   (set-logged-in-status email))
+                                   (set-logged-in-status email)
+                                   (publish :logged-in))
                                (enable-persona nil))))
   (dommy/listen! [(sel1 :.user-area) :#login] :click login)
   (dommy/listen! [(sel1 :.user-area) :#logout] :click logout))
