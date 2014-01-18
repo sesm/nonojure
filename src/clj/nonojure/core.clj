@@ -60,8 +60,11 @@
       resp)))
 
 (def app
-  (-> (chandler/site #'app-routes)
-      (wrap-logging)))
+  (let [cookie-attrs {:max-age (get-in config [:web :cookie-max-age])
+                      :http-only true}]
+      (-> #'app-routes
+          (chandler/site {:session {:cookie-attrs cookie-attrs}})
+          (wrap-logging))))
 
 (defn start []
   (db/connect (:mongo config))

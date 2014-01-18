@@ -16,6 +16,8 @@
            :username nil
            :password nil}
    :web {:port 3000
-         :persona-audience "http://localhost:3000"}})
+         :persona-audience "http://localhost:3000"
+         ; session cookie lives for 1 month
+         :cookie-max-age (* 60 60 24 30)}})
 
 (def config (merge default-config (read-config)))
