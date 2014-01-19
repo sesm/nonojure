@@ -1,12 +1,11 @@
 (ns nonojure.puzzlebrowser
   (:require
    [dommy.core :as dommy]
-   [nonojure.utils :refer [ajax log]]
+   [nonojure.utils :refer [ajax log] :as utils]
    [nonojure.storage :as stg]
    [nonojure.navigation :as nav]
    [nonojure.pubsub :refer [subscribe publish]]
    [nonojure.url :refer [go-overwrite-history go]]
-   [monet.canvas :as c]
    [clojure.string :refer [join]]
    [clojure.set :refer [map-invert]])
   (:use-macros
@@ -26,41 +25,8 @@
 (def cell-size 4)
 
 (defn draw-grid [thumbnail width height board-state]
-  (let [ctx (c/get-context (sel1 thumbnail :canvas) :2d)]
-    (c/clear-rect ctx {:x 0
-                       :y 0
-                       :w (* width cell-size)
-                       :h (* height cell-size)} )
-    (c/translate ctx (/ cell-size 2) (/ cell-size 2))
-    (c/stroke-width ctx 0.3)
-    (doseq [x (range 0 width)
-            y (range 0 height)]
-      (c/stroke-rect ctx {:x (* x cell-size)
-                          :y (* y cell-size)
-                          :w cell-size
-                          :h cell-size}))
-    (c/stroke-width ctx 0.5)
-    (c/stroke-rect ctx {:x 0 :y 0
-                        :w (* width cell-size)
-                        :h (* height cell-size)})
-    (doseq [x (range 0 width 5)
-            y (range 0 height 5)]
-      (c/stroke-rect ctx {:x (* x cell-size)
-                          :y (* y cell-size)
-                          :w (* 5 cell-size)
-                          :h (* 5 cell-size)}))
-    (when board-state
-      (c/stroke-width ctx 0.1)
-      (doseq [x (range width)
-              y (range height)
-                :when (= :filled (get-in board-state [y x]))]
-        (c/fill-rect ctx {:x (* x cell-size)
-                          :y (* y cell-size)
-                          :w cell-size
-                          :h cell-size})))
-    (c/translate ctx (/ cell-size -2) (/ cell-size -2))
-
-    thumbnail))
+  (utils/draw-grid (sel1 thumbnail :canvas) width height board-state cell-size)
+  thumbnail)
 
 (deftemplate nono-thumbnail [nono]
   (let [width (:width nono)

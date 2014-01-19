@@ -1,6 +1,7 @@
 (ns nonojure.utils
   (:require [clojure.string :refer [join]]
-            [dommy.core :as dommy])
+            [dommy.core :as dommy]
+            [monet.canvas :as c])
   (:import goog.debug.Logger
            goog.debug.Console)
   (:require-macros [dommy.macros :refer [sel1]]))
@@ -40,3 +41,38 @@
   (->> (map #(if (coll? %) (pr-str %) %) msgs)
        (join " ")
        (.info logger)))
+
+(defn draw-grid [canvas width height board-state cell-size]
+  (let [ctx (c/get-context canvas :2d)]
+    (c/clear-rect ctx {:x 0
+                       :y 0
+                       :w (* width cell-size)
+                       :h (* height cell-size)} )
+    (c/translate ctx (/ cell-size 2) (/ cell-size 2))
+    (c/stroke-width ctx 0.3)
+    (doseq [x (range 0 width)
+            y (range 0 height)]
+      (c/stroke-rect ctx {:x (* x cell-size)
+                          :y (* y cell-size)
+                          :w cell-size
+                          :h cell-size}))
+    (c/stroke-width ctx 0.5)
+    (c/stroke-rect ctx {:x 0 :y 0
+                        :w (* width cell-size)
+                        :h (* height cell-size)})
+    (doseq [x (range 0 width 5)
+            y (range 0 height 5)]
+      (c/stroke-rect ctx {:x (* x cell-size)
+                          :y (* y cell-size)
+                          :w (* 5 cell-size)
+                          :h (* 5 cell-size)}))
+    (when board-state
+      (c/stroke-width ctx 0.1)
+      (doseq [x (range width)
+              y (range height)
+                :when (= :filled (get-in board-state [y x]))]
+        (c/fill-rect ctx {:x (* x cell-size)
+                          :y (* y cell-size)
+                          :w cell-size
+                          :h cell-size})))
+    (c/translate ctx (/ cell-size -2) (/ cell-size -2))))

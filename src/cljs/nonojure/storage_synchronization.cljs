@@ -1,7 +1,8 @@
 (ns nonojure.storage-synchronization
   (:require [nonojure.utils :refer [log ajax]]
             [nonojure.storage :as stg]
-            [cljs.core.async :refer [put! <! >! chan close!] :as async])
+            [cljs.core.async :refer [put! <! >! chan close!] :as async]
+            [clojure.walk :refer [postwalk-replace]])
   (:use-macros
    [cljs.core.async.macros :only [go go-loop]]))
 
@@ -162,6 +163,15 @@ that B has correct state afterall"
                         (async/into {}))]
         (<! result))))
 
+(defn normalize-progress
+  "Replaces :crossed entried in solution state with :empty. We need it to compare
+expected and real results in the end of synchronization."
+  [progress]
+  (into {}
+    (for [[k v] progress]
+      [k (update-in v [:solution]
+                    #(postwalk-replace {:crossed :empty} %))])))
+
 (defn synchronize-storages [storage-a storage-b finish-callback ask-user-callback]
   (log "Started synchronization")
   (go
@@ -175,19 +185,20 @@ that B has correct state afterall"
          b (<! (astg stg/load-progress storage-b ids))
 
          ; Synchronize puzzles (step 3).
-         expected-b-progress (<! (synchronize-all-puzzles a b storage-b ask-user-callback))
+         expected-b-progress (normalize-progress (<! (synchronize-all-puzzles a b storage-b ask-user-callback)))
 
          ; Get real progress from storage B (step 4).
-         real-b-progress (<! (astg stg/load-progress storage-b ids))]
+         real-b-progress (normalize-progress (<! (astg stg/load-progress storage-b ids)))]
      (log "Verifying")
      (if (= real-b-progress expected-b-progress)
        (do (<! (clear-storage storage-a ids))
            (finish-callback))
        (do (log "Bad synchronization :(((((")
+           (log "Expected state on server" expected-b-progress)
+           (log "Real state on server" real-b-progress)
+           (log "Full a progress" a)
+           (log "Full b progress" b)
            (doseq [key (keys expected-b-progress)]
              (when (not= (real-b-progress key) (expected-b-progress key))
-               (log key (expected-b-progress key) (real-b-progress key))))
-;           (log "expected" expected-b-progress)
-;           (log "actual" real-b-progress)
-           )))))
+               (log "Diff ($key $expexted $real):" key (expected-b-progress key) (real-b-progress key)))))))))
 

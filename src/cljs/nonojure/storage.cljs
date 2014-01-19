@@ -147,7 +147,7 @@
   (load-short-progress [storage callback]
     (ajax "/api/user/get-short-progress-all-puzzles" callback)))
 
-(def local-storage window/localStorage)
+(declare local-storage)
 
 (def server-storage (ServerStorage.))
 
@@ -158,6 +158,7 @@
   (publish :storage-changed))
 
 (defn ^:export init []
+  (def local-storage window/localStorage)
   (subscribe :logged-in #(change-storage! server-storage))
   (subscribe :logged-out #(change-storage! local-storage))
   (reset! storage local-storage))

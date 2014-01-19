@@ -96,10 +96,6 @@
          :bottom 0
          :z-index 100}
 
-         [:.floater
-             {:float "left"
-              :height "40%"}]
-
          [:.content
              {:background-color "#FFF"
               :opacity 1
@@ -107,6 +103,15 @@
               :margin "auto"
               :padding "15px"
               :border-radius "5px"
-              :position "relative"}]]
+              :position "relative"}]]]
 
-]
+[:#synchronization-puzzle-select-dialog
+    {:display "inline-block"}
+
+    [:.progress
+        {:display "inline-block"
+         :padding "0px 5px"}
+
+        [:&:hover
+            {:background-color "#EEE"
+             :cursor "pointer"}]]]

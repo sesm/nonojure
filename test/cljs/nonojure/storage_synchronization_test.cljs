@@ -38,9 +38,11 @@
 ;;; * solved in storage B
 (def inp-board-a [[:crossed]])
 (def inp-board-b [[:filled]])
-(def slv-board-a [[:crossed :crossed]])
-(def slv-board-b slv-board-a ;[[:filled :filled]]
-  )
+; For solutions :crossed and :empty values are equals as solution depends only on :filled.
+; Storage synchronization should work correctly in this case.
+; Use :crossed and :empty versions for a and b solutions respectively.
+(def slv-board-a [[:crossed :filled]])
+(def slv-board-b [[:empty :filled]])
 
 (defn fill-storage-a [storage]
   (letfn [(save-progress [id]

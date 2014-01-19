@@ -3,6 +3,7 @@
    [nonojure.navigation :refer [show-view]]
    [dommy.utils :as utils]
    [dommy.core :as dommy])
+  (:import goog.dom)
   (:use-macros
    [dommy.macros :only [deftemplate sel1]]))
 
@@ -10,7 +11,6 @@
   [:div#dialog
    [:div.darkener]
    [:div.content-holder
-    [:div.floater]
     [:div.content]]])
 
 (defn create [content]
@@ -20,8 +20,15 @@
      (dommy/append! content-div content)
      (let [child (sel1 dialog ".content > *") ;; horrible. Don't know how to get first
                                               ;; child of .content other way.
-           width (str (.-offsetWidth child) "px")]
-      (dommy/set-style! content-div :width width)))
+           width (str (.-offsetWidth child) "px")
+           height (.-offsetHeight child)
+           viewport-size (.getViewportSize goog.dom)
+           top (str (/ (- (.-height viewport-size) height)
+                       2)
+                    "px")]
+      (dommy/set-style! content-div :width width :top top)
+;      (dommy/set-style! content-div :top top)
+      ))
     dialog))
 
 (defn close [dialog]
