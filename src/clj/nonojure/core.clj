@@ -40,6 +40,8 @@
   (fn [req]
     (try (handler req)
          (catch Exception e
+           (println e)
+           (.printStackTrace e)
            {:status 500}))))
 
 (defroutes app-routes

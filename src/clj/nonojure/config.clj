@@ -8,7 +8,10 @@
       (edn/read-string {:eof {}} (slurp "config.clj"))
       {})))
 
-(def one-hour (* 60 60 1000))
+(defn- deep-merge [& maps]
+  (if (every? map? maps)
+    (apply merge-with deep-merge maps)
+    (last maps)))
 
 (def default-config
   {:mongo {:host "localhost"
@@ -20,4 +23,4 @@
          ; session cookie lives for 1 month
          :cookie-max-age (* 60 60 24 30)}})
 
-(def config (merge default-config (read-config)))
+(def config (deep-merge default-config (read-config)))
