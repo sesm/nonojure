@@ -181,6 +181,10 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
   (pw/change-style! widget style)
   state)
 
+(defn reload-style-from-storage [storage widget]
+  (stg/load-preferences storage
+                        #(pw/change-style! widget (or % {}))))
+
 (defn load-progress [id storage event-chan]
   (stg/load-progress storage [id]
                      #(put! event-chan [:progress-loaded %])))
@@ -226,6 +230,7 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
                        :storage-changed (do (when-let [id (get-in state [:puzzle :id])]
                                               (load-progress id @stg/storage event-chan))
                                             (pw/clear-puzzle! (:widget state))
+                                            (reload-style-from-storage @stg/storage (:widget state))
                                             (-> state
                                                 clear-state
                                                 (assoc :storage @stg/storage)))
@@ -251,6 +256,5 @@ Also adds :valid? bool value to map indicating whether everyting is correct."
 
 (defn ^:export init [view]
   (pw/init! view)
-  (stg/load-preferences @stg/storage
-                        #(pw/change-style! view (or % {})))
+  (reload-style-from-storage @stg/storage view)
   (start-async-loop view))
