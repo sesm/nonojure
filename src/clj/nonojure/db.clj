@@ -3,7 +3,7 @@
              [core :as mg]
              [collection :as mc]
              [query :as mq]
-             [operators :refer [$gte $lte $or $in]]]
+             [operators :refer :all]]
             [nonojure
              [random :refer [generate-puzzle]]]
             [taoensso.timbre :refer [error warn]])
@@ -14,6 +14,12 @@
 (def pref-coll "preferences")
 (def db-name "nonojure")
 
+(defn get-next-sequence [name]
+  (-> (mc/find-and-modify "counters" {:_id name} {$inc {:seq 1}} :return-new true)
+      :seq
+      int
+      str))
+
 (defn connect [config]
   (try (mg/connect! config)
        (when-let [username (:username config)]
@@ -23,7 +29,7 @@
          (error (str "Couldn't connect to mongo " e)))))
 
 (defn insert-nonogram [nonogram]
-  (let [id (ObjectId.)
+  (let [id (get-next-sequence nono-coll)
         width (count (:top nonogram))
         height (count (:left nonogram))
         nonogram (assoc nonogram
@@ -62,11 +68,11 @@
        (map prepare-nono-for-client)))
 
 (defn find-nonogram-by-id [id]
-  (when-let [nono (mc/find-one-as-map nono-coll {:_id (ObjectId. id)})]
+  (when-let [nono (mc/find-one-as-map nono-coll {:_id id})]
     (prepare-nono-for-client nono)))
 
 (defn update-difficulty [id difficulty]
-  (when-let [nono (mc/find-one-as-map nono-coll {:_id (ObjectId. id)})]
+  (when-let [nono (mc/find-one-as-map nono-coll {:_id id})]
     (when (<= 1 difficulty 3)
       (let [times (:times-rated nono)
             new-difficulty (-> (:difficulty nono)
@@ -76,7 +82,7 @@
             new-nono (assoc nono
                        :difficulty new-difficulty
                        :times-rated (inc times))]
-        (mc/update-by-id nono-coll (ObjectId. id) new-nono)
+        (mc/update-by-id nono-coll id new-nono)
         (find-nonogram-by-id id)))))
 
 (defn fill-db-with-random-puzzles []
@@ -120,18 +126,17 @@
   (mc/upsert pref-coll {:_id email} (assoc preferences
                                       :_id email)))
 
-#_(save-preferences "hello@world.com" {:style 1
-                                     :b-style 2})
-
-#_(find-puzzle-progress-by-ids ["1" "2" "3"] "hello@world.com")
-
-
-#_(save-puzzle-progress "1" "hello@world.com" {:solution ["asdfb" "123" "sdf"]
-                                             :status "solved"})
-
-;(clojure.repl/doc mc/update-by-id)
+(defn migrate-ids-to-numbers []
+  (doseq [nono (mc/find-maps nono-coll)]
+    (let [old-id (:_id nono)
+          new-id (get-next-sequence nono-coll)]
+      (mc/insert nono-coll (assoc nono :_id new-id))
+      (mc/remove nono-coll {:_id old-id})
+      (mc/update progress-coll {:puzzle old-id} {$set {:puzzle new-id}}))))
 
 #_(
+
+   (migrate-ids-to-numbers)
 
    (mc/remove nono-coll)
 

@@ -64,7 +64,7 @@
   (with-email req
     (let [ids (split (get-in req [:params :ids]) #",")]
       (->> (db/find-puzzle-progress-by-ids ids email)
-           (map #(vector (:puzzle-id %) (select-keys % [:current-state :solution :status])))
+           (map #(vector (:puzzle %) (select-keys % [:current-state :solution :status])))
            (into {})
            response))))
 
@@ -75,14 +75,17 @@
 
 (defn save-puzzle-progress [{:keys [body] :as req}]
   (with-email req
-    (db/save-puzzle-progress (:puzzle-id body) email (assoc body :status :in-progress))
+    (db/save-puzzle-progress (:puzzle-id body) email (-> body
+                                                         (assoc :status :in-progress)
+                                                         (dissoc :puzzle-id)))
     (response {:result :ok})))
 
 (defn mark-puzzle-solved [{:keys [body] :as req}]
   (with-email req
-    (db/save-puzzle-progress (:puzzle-id body) email (assoc body
-                                                       :status :solved
-                                                       :current-state nil))
+    (db/save-puzzle-progress (:puzzle-id body) email (-> body
+                                                         (assoc :status :solved
+                                                                :current-state nil)
+                                                         (dissoc :puzzle-id)))
     (response {:result :ok})))
 
 (defn get-preferences [req]
