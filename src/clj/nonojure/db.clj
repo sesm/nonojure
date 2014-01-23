@@ -126,14 +126,6 @@
   (mc/upsert pref-coll {:_id email} (assoc preferences
                                       :_id email)))
 
-(defn migrate-ids-to-numbers []
-  (doseq [nono (mc/find-maps nono-coll)]
-    (let [old-id (:_id nono)
-          new-id (get-next-sequence nono-coll)]
-      (mc/insert nono-coll (assoc nono :_id new-id))
-      (mc/remove nono-coll {:_id old-id})
-      (mc/update progress-coll {:puzzle old-id} {$set {:puzzle new-id}}))))
-
 #_(
 
    (migrate-ids-to-numbers)
